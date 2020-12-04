@@ -49,7 +49,7 @@ type PlayerState
     | Stopped
 
 
-type PlaylistSetting
+type PlaybackSetting
     = Random
     | Single
     | Repeat
@@ -92,7 +92,7 @@ initPlaybackState =
     }
 
 
-updateSetting : PlaybackState -> PlaylistSetting -> Bool -> PlaybackState
+updateSetting : PlaybackState -> PlaybackSetting -> Bool -> PlaybackState
 updateSetting playbackState setting value =
     case setting of
         Random ->
@@ -162,8 +162,8 @@ stringStateToPlayerState input =
 type Msg
     = ReceivedStatus (Result Http.Error PlaybackState)
     | ReceivedPlaylist (Result Http.Error (List PlaylistEntry))
-    | ChangedPlaylistSetting PlaylistSetting Bool
-    | StoredPlaylistSetting PlaylistSetting Bool (Result Http.Error ())
+    | ChangedPlaybackSetting PlaybackSetting Bool
+    | StoredPlaybackSetting PlaybackSetting Bool (Result Http.Error ())
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -185,10 +185,10 @@ update message model =
                 Ok entries ->
                     ( { model | playlist = entries }, Cmd.none )
 
-        ChangedPlaylistSetting setting value ->
-            ( model, storePlaylistSetting setting value )
+        ChangedPlaybackSetting setting value ->
+            ( model, storePlaybackSetting setting value )
 
-        StoredPlaylistSetting setting value result ->
+        StoredPlaybackSetting setting value result ->
             case result of
                 Err _ ->
                     ( model, Cmd.none )
@@ -222,12 +222,12 @@ renderPlaylistEntry entry =
     li [] [ text entry.title ]
 
 
-renderCheckbox : Model -> PlaylistSetting -> Html Msg
+renderCheckbox : Model -> PlaybackSetting -> Html Msg
 renderCheckbox model setting =
-    span [] [ HS.input [ Html.Styled.Attributes.type_ "checkbox", Html.Styled.Attributes.checked (getValueFromStatus model.playbackState setting), Html.Styled.Events.onCheck (ChangedPlaylistSetting setting) ] [], span [] [ text (getNameFromSetting setting) ] ]
+    span [] [ HS.input [ Html.Styled.Attributes.type_ "checkbox", Html.Styled.Attributes.checked (getValueFromStatus model.playbackState setting), Html.Styled.Events.onCheck (ChangedPlaybackSetting setting) ] [], span [] [ text (getNameFromSetting setting) ] ]
 
 
-getNameFromSetting : PlaylistSetting -> String
+getNameFromSetting : PlaybackSetting -> String
 getNameFromSetting setting =
     case setting of
         Repeat ->
@@ -243,7 +243,7 @@ getNameFromSetting setting =
             "Consume"
 
 
-getValueFromStatus : PlaybackState -> PlaylistSetting -> Bool
+getValueFromStatus : PlaybackState -> PlaybackSetting -> Bool
 getValueFromStatus state setting =
     case setting of
         Repeat ->
@@ -259,8 +259,8 @@ getValueFromStatus state setting =
             state.consume
 
 
-storePlaylistSetting : PlaylistSetting -> Bool -> Cmd Msg
-storePlaylistSetting setting value =
+storePlaybackSetting : PlaybackSetting -> Bool -> Cmd Msg
+storePlaybackSetting setting value =
     let
         requestSettingName =
             getNameFromSetting setting |> toLower
@@ -282,7 +282,7 @@ storePlaylistSetting setting value =
                     , ( "value", JE.string requestValue )
                     ]
                 )
-        , expect = Http.expectWhatever (StoredPlaylistSetting setting value)
+        , expect = Http.expectWhatever (StoredPlaybackSetting setting value)
         }
 
 
