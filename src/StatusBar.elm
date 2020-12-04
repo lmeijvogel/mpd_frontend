@@ -15,6 +15,11 @@ import String exposing (toLower)
 
 
 type alias Model =
+    { playbackState : PlaybackState
+    }
+
+
+type alias PlaybackState =
     { repeat : Bool
     , random : Bool
     , single : Bool
@@ -56,6 +61,12 @@ type alias Player =
 
 init : Model
 init =
+    { playbackState = initPlaybackState
+    }
+
+
+initPlaybackState : PlaybackState
+initPlaybackState =
     { repeat = False
     , random = False
     , single = False
@@ -70,25 +81,25 @@ init =
     }
 
 
-updateSetting : Model -> PlaylistSetting -> Bool -> Model
-updateSetting model setting value =
+updateSetting : PlaybackState -> PlaylistSetting -> Bool -> PlaybackState
+updateSetting playbackState setting value =
     case setting of
         Random ->
-            { model | random = value }
+            { playbackState | random = value }
 
         Repeat ->
-            { model | repeat = value }
+            { playbackState | repeat = value }
 
         Single ->
-            { model | single = value }
+            { playbackState | single = value }
 
         Consume ->
-            { model | consume = value }
+            { playbackState | consume = value }
 
 
-decodeStatus : JD.Decoder Model
-decodeStatus =
-    JD.succeed Model
+decodePlaybackState : JD.Decoder PlaybackState
+decodePlaybackState =
+    JD.succeed PlaybackState
         |> required "repeat" bool
         |> required "random" bool
         |> required "single" bool
@@ -138,7 +149,7 @@ stringStateToPlayerState input =
 
 
 type Msg
-    = ReceivedStatus (Result Http.Error Model)
+    = ReceivedStatus (Result Http.Error PlaybackState)
     | ChangedPlaylistSetting PlaylistSetting Bool
     | StoredPlaylistSetting PlaylistSetting Bool (Result Http.Error ())
 
@@ -152,7 +163,7 @@ update message model =
                     ( model, Cmd.none )
 
                 Ok newStatus ->
-                    ( newStatus, Cmd.none )
+                    ( { model | playbackState = newStatus }, Cmd.none )
 
         ChangedPlaylistSetting setting value ->
             ( model, storePlaylistSetting setting value )
@@ -163,7 +174,7 @@ update message model =
                     ( model, Cmd.none )
 
                 Ok _ ->
-                    ( updateSetting model setting value, Cmd.none )
+                    ( { model | playbackState = updateSetting model.playbackState setting value }, Cmd.none )
 
 
 
@@ -171,16 +182,16 @@ update message model =
 
 
 view : Model -> Html Msg
-view status =
+view model =
     div []
-        (List.map (renderCheckbox status)
+        (List.map (renderCheckbox model)
             [ Repeat, Single, Random, Consume ]
         )
 
 
 renderCheckbox : Model -> PlaylistSetting -> Html Msg
-renderCheckbox status setting =
-    span [] [ HS.input [ Html.Styled.Attributes.type_ "checkbox", Html.Styled.Attributes.checked (getValueFromStatus status setting), Html.Styled.Events.onCheck (ChangedPlaylistSetting setting) ] [], span [] [ text (getNameFromSetting setting) ] ]
+renderCheckbox model setting =
+    span [] [ HS.input [ Html.Styled.Attributes.type_ "checkbox", Html.Styled.Attributes.checked (getValueFromStatus model.playbackState setting), Html.Styled.Events.onCheck (ChangedPlaylistSetting setting) ] [], span [] [ text (getNameFromSetting setting) ] ]
 
 
 getNameFromSetting : PlaylistSetting -> String
@@ -199,20 +210,20 @@ getNameFromSetting setting =
             "Consume"
 
 
-getValueFromStatus : Model -> PlaylistSetting -> Bool
-getValueFromStatus status setting =
+getValueFromStatus : PlaybackState -> PlaylistSetting -> Bool
+getValueFromStatus state setting =
     case setting of
         Repeat ->
-            status.repeat
+            state.repeat
 
         Single ->
-            status.single
+            state.single
 
         Random ->
-            status.random
+            state.random
 
         Consume ->
-            status.consume
+            state.consume
 
 
 storePlaylistSetting : PlaylistSetting -> Bool -> Cmd Msg
@@ -244,7 +255,14 @@ storePlaylistSetting setting value =
 
 load : Cmd Msg
 load =
+    Cmd.batch
+        [ loadPlaybackState
+        ]
+
+
+loadPlaybackState : Cmd Msg
+loadPlaybackState =
     Http.get
         { url = "/api/status"
-        , expect = Http.expectJson ReceivedStatus decodeStatus
+        , expect = Http.expectJson ReceivedStatus decodePlaybackState
         }
