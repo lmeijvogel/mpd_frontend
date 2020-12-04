@@ -1,19 +1,16 @@
 module Main exposing (..)
 
--- Press buttons to increment and decrement a counter.
---
--- Read how it works:
---   https://guide.elm-lang.org/architecture/buttons.html
---
-
 import Browser
-import Html
-import Html.Styled exposing (..)
+import Dict exposing (Dict)
+import Html.Styled as HS exposing (..)
 import Html.Styled.Attributes exposing (src)
 import Html.Styled.Events exposing (onClick)
 import Http exposing (jsonBody)
-import Json.Decode as JD
+import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list, nullable, string)
+import Json.Decode.Extra
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
+import StatusBar exposing (..)
 import String exposing (concat)
 import Styles
 
@@ -36,6 +33,21 @@ main =
 -- MODEL
 
 
+type alias Model =
+    { cdList : CdListModel
+    , currentCd : Maybe Cd
+    , playlist : List PlaylistEntry
+    , state : PlayerState
+    , status : StatusBar.Model
+    }
+
+
+type CdListModel
+    = Loading
+    | Error
+    | CDs (List Cd)
+
+
 type alias Cd =
     { artist : String
     , title : String
@@ -52,33 +64,15 @@ type alias PlaylistEntry =
     }
 
 
-type PlayerState
-    = Playing
-    | Stopped
-
-
-type alias Model =
-    { cdList : CdListModel
-    , currentCd : Maybe Cd
-    , playlist : List PlaylistEntry
-    , state : PlayerState
-    }
-
-
-type CdListModel
-    = Loading
-    | Error
-    | CDs (List Cd)
-
-
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { cdList = Loading
       , currentCd = Nothing
       , playlist = []
       , state = Stopped
+      , status = StatusBar.init
       }
-    , Cmd.batch [ loadAlbums, loadPlaylist ]
+    , Cmd.batch [ loadAlbums, loadPlaylist, Cmd.map StatusBarMsg StatusBar.load ]
     )
 
 
@@ -91,11 +85,19 @@ type Msg
     | ReceivedPlaylist (Result Http.Error (List PlaylistEntry))
     | CdChosen Cd
     | StartedAlbum Cd (Result Http.Error ())
+    | StatusBarMsg StatusBar.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        StatusBarMsg message ->
+            let
+                ( newStatusBarModel, action ) =
+                    StatusBar.update message model.status
+            in
+            ( { model | status = newStatusBarModel }, Cmd.map StatusBarMsg action )
+
         ReceivedAlbums result ->
             case result of
                 Err _ ->
@@ -133,6 +135,7 @@ view model =
     div [ Styles.body ]
         [ div [] [ renderCdList model.cdList ]
         , renderPlaylist model.playlist
+        , HS.map StatusBarMsg (StatusBar.view model.status)
         ]
 
 
