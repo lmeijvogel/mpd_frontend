@@ -36,7 +36,6 @@ main =
 type alias Model =
     { cdList : CdListModel
     , currentCd : Maybe Cd
-    , playlist : List PlaylistEntry
     , state : PlayerState
     , status : StatusBar.Model
     }
@@ -55,24 +54,14 @@ type alias Cd =
     }
 
 
-type alias PlaylistEntry =
-    { id : Int
-    , artist : String
-    , title : String
-    , position : Int
-    , time : Int
-    }
-
-
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { cdList = Loading
       , currentCd = Nothing
-      , playlist = []
       , state = Stopped
       , status = StatusBar.init
       }
-    , Cmd.batch [ loadAlbums, loadPlaylist, Cmd.map StatusBarMsg StatusBar.load ]
+    , Cmd.batch [ loadAlbums, Cmd.map StatusBarMsg StatusBar.load ]
     )
 
 
@@ -82,7 +71,6 @@ init _ =
 
 type Msg
     = ReceivedAlbums (Result Http.Error (List Cd))
-    | ReceivedPlaylist (Result Http.Error (List PlaylistEntry))
     | CdChosen Cd
     | StartedAlbum Cd (Result Http.Error ())
     | StatusBarMsg StatusBar.Msg
@@ -106,14 +94,6 @@ update msg model =
                 Ok cds ->
                     ( { model | cdList = CDs cds }, Cmd.none )
 
-        ReceivedPlaylist result ->
-            case result of
-                Err _ ->
-                    ( { model | playlist = [] }, Cmd.none )
-
-                Ok entries ->
-                    ( { model | playlist = entries }, Cmd.none )
-
         CdChosen cd ->
             ( model, clearAndPlay cd )
 
@@ -134,7 +114,6 @@ view : Model -> Html Msg
 view model =
     div [ Styles.body ]
         [ div [] [ renderCdList model.cdList ]
-        , renderPlaylist model.playlist
         , HS.map StatusBarMsg (StatusBar.view model.status)
         ]
 
@@ -172,29 +151,11 @@ renderCd cd =
         ]
 
 
-renderPlaylist : List PlaylistEntry -> Html Msg
-renderPlaylist entries =
-    div [] (List.map renderPlaylistEntry entries)
-
-
-renderPlaylistEntry : PlaylistEntry -> Html Msg
-renderPlaylistEntry entry =
-    li [] [ text entry.title ]
-
-
 loadAlbums : Cmd Msg
 loadAlbums =
     Http.get
         { url = "/api/albums"
         , expect = Http.expectJson ReceivedAlbums albumDecoder
-        }
-
-
-loadPlaylist : Cmd Msg
-loadPlaylist =
-    Http.get
-        { url = "/api/playlist"
-        , expect = Http.expectJson ReceivedPlaylist playlistDecoder
         }
 
 
@@ -220,18 +181,6 @@ albumDecoder =
             (JD.field "album_artist" JD.string)
             (JD.field "album" JD.string)
             (JD.field "cover_path" JD.string)
-        )
-
-
-playlistDecoder : JD.Decoder (List PlaylistEntry)
-playlistDecoder =
-    JD.list
-        (JD.map5 PlaylistEntry
-            (JD.field "id" JD.int)
-            (JD.field "artist" JD.string)
-            (JD.field "title" JD.string)
-            (JD.field "position" JD.int)
-            (JD.field "time" JD.int)
         )
 
 

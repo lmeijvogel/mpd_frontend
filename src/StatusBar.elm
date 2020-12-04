@@ -15,7 +15,17 @@ import String exposing (toLower)
 
 
 type alias Model =
-    { playbackState : PlaybackState
+    { playlist : List PlaylistEntry
+    , playbackState : PlaybackState
+    }
+
+
+type alias PlaylistEntry =
+    { id : Int
+    , artist : String
+    , title : String
+    , position : Int
+    , time : Int
     }
 
 
@@ -61,7 +71,8 @@ type alias Player =
 
 init : Model
 init =
-    { playbackState = initPlaybackState
+    { playlist = []
+    , playbackState = initPlaybackState
     }
 
 
@@ -150,6 +161,7 @@ stringStateToPlayerState input =
 
 type Msg
     = ReceivedStatus (Result Http.Error PlaybackState)
+    | ReceivedPlaylist (Result Http.Error (List PlaylistEntry))
     | ChangedPlaylistSetting PlaylistSetting Bool
     | StoredPlaylistSetting PlaylistSetting Bool (Result Http.Error ())
 
@@ -164,6 +176,14 @@ update message model =
 
                 Ok newStatus ->
                     ( { model | playbackState = newStatus }, Cmd.none )
+
+        ReceivedPlaylist result ->
+            case result of
+                Err _ ->
+                    ( { model | playlist = [] }, Cmd.none )
+
+                Ok entries ->
+                    ( { model | playlist = entries }, Cmd.none )
 
         ChangedPlaylistSetting setting value ->
             ( model, storePlaylistSetting setting value )
@@ -184,9 +204,22 @@ update message model =
 view : Model -> Html Msg
 view model =
     div []
-        (List.map (renderCheckbox model)
-            [ Repeat, Single, Random, Consume ]
-        )
+        [ renderPlaylist model.playlist
+        , div []
+            (List.map (renderCheckbox model)
+                [ Repeat, Single, Random, Consume ]
+            )
+        ]
+
+
+renderPlaylist : List PlaylistEntry -> Html Msg
+renderPlaylist entries =
+    div [] (List.map renderPlaylistEntry entries)
+
+
+renderPlaylistEntry : PlaylistEntry -> Html Msg
+renderPlaylistEntry entry =
+    li [] [ text entry.title ]
 
 
 renderCheckbox : Model -> PlaylistSetting -> Html Msg
@@ -253,10 +286,31 @@ storePlaylistSetting setting value =
         }
 
 
+loadPlaylist : Cmd Msg
+loadPlaylist =
+    Http.get
+        { url = "/api/playlist"
+        , expect = Http.expectJson ReceivedPlaylist playlistDecoder
+        }
+
+
+playlistDecoder : JD.Decoder (List PlaylistEntry)
+playlistDecoder =
+    JD.list
+        (JD.map5 PlaylistEntry
+            (JD.field "id" JD.int)
+            (JD.field "artist" JD.string)
+            (JD.field "title" JD.string)
+            (JD.field "position" JD.int)
+            (JD.field "time" JD.int)
+        )
+
+
 load : Cmd Msg
 load =
     Cmd.batch
-        [ loadPlaybackState
+        [ loadPlaylist
+        , loadPlaybackState
         ]
 
 
