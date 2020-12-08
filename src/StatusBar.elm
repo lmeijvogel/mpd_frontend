@@ -1,5 +1,7 @@
 module StatusBar exposing (..)
 
+import FontAwesome.Icon as Icon exposing (Icon)
+import FontAwesome.Solid as Icon
 import Html.Styled as HS exposing (..)
 import Html.Styled.Attributes exposing (src)
 import Html.Styled.Events exposing (onClick)
@@ -7,6 +9,7 @@ import Http exposing (jsonBody)
 import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
+import StatusBarStyles
 import String exposing (toLower)
 
 
@@ -42,6 +45,14 @@ type alias PlaybackState =
     , elapsed : Maybe Float
     , duration : Maybe Float
     }
+
+
+type PlayerCommand
+    = Previous
+    | Play
+    | Pause
+    | Stop
+    | Next
 
 
 type PlayerState
@@ -164,6 +175,8 @@ type Msg
     | ReceivedPlaylist (Result Http.Error (List PlaylistEntry))
     | ChangedPlaybackSetting PlaybackSetting Bool
     | StoredPlaybackSetting PlaybackSetting Bool (Result Http.Error ())
+    | ClickedPlayerCommand PlayerCommand
+    | SentPlayerCommand (Result Http.Error ())
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -196,6 +209,12 @@ update message model =
                 Ok _ ->
                     ( { model | playbackState = updateSetting model.playbackState setting value }, Cmd.none )
 
+        ClickedPlayerCommand command ->
+            ( model, sendPlayerCommand command )
+
+        SentPlayerCommand command ->
+            ( model, loadPlaybackState )
+
 
 
 -- VIEW
@@ -204,22 +223,60 @@ update message model =
 view : Model -> Html Msg
 view model =
     div []
-        [ renderPlaylist model.playlist
-        , div []
-            (List.map (renderCheckbox model)
-                [ Repeat, Single, Random, Consume ]
-            )
+        [ div [ StatusBarStyles.topBar ]
+            [ renderPlayerButtons model.playbackState.state
+            ]
+        , div [ StatusBarStyles.mainContents ]
+            [ renderPlaylist model
+            , div []
+                (List.map (renderCheckbox model)
+                    [ Repeat, Single, Random, Consume ]
+                )
+            ]
         ]
 
 
-renderPlaylist : List PlaylistEntry -> Html Msg
-renderPlaylist entries =
-    div [] (List.map renderPlaylistEntry entries)
+renderPlayerButtons : PlayerState -> Html Msg
+renderPlayerButtons state =
+    div []
+        [ renderButton Previous Icon.stepBackward
+        , renderButton Play Icon.play
+        , renderButton Pause Icon.pause
+        , renderButton Stop Icon.stop
+        , renderButton Next Icon.stepForward
+        ]
 
 
-renderPlaylistEntry : PlaylistEntry -> Html Msg
-renderPlaylistEntry entry =
-    li [] [ text entry.title ]
+renderButton : PlayerCommand -> Icon.Icon -> Html Msg
+renderButton command icon =
+    HS.span [ StatusBarStyles.controlButton, onClick (ClickedPlayerCommand command) ]
+        [ HS.fromUnstyled (Icon.viewIcon icon) ]
+
+
+renderPlaylist : Model -> Html Msg
+renderPlaylist model =
+    div [] (List.map (renderPlaylistEntry model.playbackState.songId) model.playlist)
+
+
+renderPlaylistEntry : Maybe Int -> PlaylistEntry -> Html Msg
+renderPlaylistEntry currentSongId entry =
+    let
+        isSongSelected =
+            case currentSongId of
+                Nothing ->
+                    False
+
+                Just songId ->
+                    songId == entry.id
+
+        elementClass =
+            if isSongSelected then
+                [ StatusBarStyles.selected ]
+
+            else
+                []
+    in
+    li elementClass [ text entry.title ]
 
 
 renderCheckbox : Model -> PlaybackSetting -> Html Msg
@@ -283,6 +340,37 @@ storePlaybackSetting setting value =
                     ]
                 )
         , expect = Http.expectWhatever (StoredPlaybackSetting setting value)
+        }
+
+
+sendPlayerCommand : PlayerCommand -> Cmd Msg
+sendPlayerCommand command =
+    let
+        commandString =
+            case command of
+                Previous ->
+                    "previous"
+
+                Play ->
+                    "play"
+
+                Pause ->
+                    "pause"
+
+                Stop ->
+                    "stop"
+
+                Next ->
+                    "next"
+    in
+    Http.post
+        { url = "api/command"
+        , body =
+            Http.jsonBody
+                (JE.object
+                    [ ( "command", JE.string commandString ) ]
+                )
+        , expect = Http.expectWhatever SentPlayerCommand
         }
 
 

@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Dict exposing (Dict)
+import FontAwesome.Styles
 import Html.Styled as HS exposing (..)
 import Html.Styled.Attributes exposing (src)
 import Html.Styled.Events exposing (onClick)
@@ -113,7 +114,8 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ Styles.body ]
-        [ div [] [ renderCdList model.cdList ]
+        [ HS.fromUnstyled FontAwesome.Styles.css
+        , div [] [ renderCdList model.cdList ]
         , HS.map StatusBarMsg (StatusBar.view model.status)
         ]
 

@@ -1,0 +1,113 @@
+module StatusBarStyles exposing (..)
+
+import Css exposing (..)
+import Html.Styled exposing (Attribute)
+import Html.Styled.Attributes exposing (css)
+
+
+mainContents : Attribute msg
+mainContents =
+    css
+        [ displayFlex
+        , flexDirection row
+        ]
+
+
+topBar : Attribute msg
+topBar =
+    css
+        [ width (pct 100)
+        ]
+
+
+selected : Attribute msg
+selected =
+    css
+        [ backgroundColor (rgb 0 0 0)
+        , color (rgb 255 255 255)
+        ]
+
+
+cdGrid : Attribute msg
+cdGrid =
+    css
+        [ width (pct 100)
+        , backgroundColor (rgb 0 0 0)
+        , color (rgb 255 255 255)
+        , displayFlex
+        , flexWrap wrap
+        ]
+
+
+cd : Attribute msg
+cd =
+    css
+        [ displayFlex
+        , flexDirection column
+        , justifyContent flexEnd
+        , margin (px 10)
+        , width (px 200)
+        , height (px 200)
+        , fontSize (pt 14)
+        , cursor pointer
+        ]
+
+
+coverImage : String -> Attribute msg
+coverImage coverPath =
+    let
+        imageComponent =
+            String.concat [ "url(", coverPath, ")" ]
+    in
+    css
+        [ property "background-image" imageComponent
+        , backgroundSize cover
+        ]
+
+
+description : Attribute msg
+description =
+    css
+        [ displayFlex
+        , flexDirection column
+        , alignItems center
+        , bottom (px 0)
+        , padding3 (px 10) (px 5) (px 2)
+        , backgroundColor (rgb 0 0 0)
+        , property "background" "linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.6) 64%, rgba(0, 0, 0, 0) 100%)"
+        , property "user-select" "none"
+        ]
+
+
+title : Attribute msg
+title =
+    css
+        [ fontStyle italic
+        , textAlign center
+        , fontSize (pt 16)
+        ]
+
+
+artist : Attribute msg
+artist =
+    css
+        [ width (pct 100)
+        , textAlign right
+        , fontSize (pt 12)
+        ]
+
+
+cdCover : Attribute msg
+cdCover =
+    css
+        [ width (px 200)
+        , height (px 200)
+        ]
+
+
+controlButton : Attribute msg
+controlButton =
+    css
+        [ fontSize (pt 20)
+        , margin (px 8)
+        ]
