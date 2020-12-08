@@ -35,20 +35,20 @@ main =
 
 
 type alias Model =
-    { cdList : CdListModel
-    , currentCd : Maybe Cd
+    { albumList : AlbumListModel
+    , currentAlbum : Maybe Album
     , state : PlayerState
     , status : StatusBar.Model
     }
 
 
-type CdListModel
+type AlbumListModel
     = Loading
     | Error
-    | CDs (List Cd)
+    | Albums (List Album)
 
 
-type alias Cd =
+type alias Album =
     { artist : String
     , title : String
     , coverPath : String
@@ -57,8 +57,8 @@ type alias Cd =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { cdList = Loading
-      , currentCd = Nothing
+    ( { albumList = Loading
+      , currentAlbum = Nothing
       , state = Stopped
       , status = StatusBar.init
       }
@@ -71,9 +71,9 @@ init _ =
 
 
 type Msg
-    = ReceivedAlbums (Result Http.Error (List Cd))
-    | CdChosen Cd
-    | StartedAlbum Cd (Result Http.Error ())
+    = ReceivedAlbums (Result Http.Error (List Album))
+    | AlbumChosen Album
+    | StartedAlbum Album (Result Http.Error ())
     | StatusBarMsg StatusBar.Msg
 
 
@@ -90,21 +90,21 @@ update msg model =
         ReceivedAlbums result ->
             case result of
                 Err _ ->
-                    ( { model | cdList = Error }, Cmd.none )
+                    ( { model | albumList = Error }, Cmd.none )
 
-                Ok cds ->
-                    ( { model | cdList = CDs cds }, Cmd.none )
+                Ok albums ->
+                    ( { model | albumList = Albums albums }, Cmd.none )
 
-        CdChosen cd ->
-            ( model, clearAndPlay cd )
+        AlbumChosen album ->
+            ( model, clearAndPlay album )
 
-        StartedAlbum cd result ->
+        StartedAlbum album result ->
             case result of
                 Err _ ->
                     ( model, Cmd.none )
 
                 Ok _ ->
-                    ( { model | currentCd = Just cd, state = Playing }, Cmd.map StatusBarMsg StatusBar.load )
+                    ( { model | currentAlbum = Just album, state = Playing }, Cmd.map StatusBarMsg StatusBar.load )
 
 
 
@@ -115,40 +115,40 @@ view : Model -> Html Msg
 view model =
     div [ Styles.body ]
         [ HS.fromUnstyled FontAwesome.Styles.css
-        , div [] [ renderCdList model.cdList ]
+        , div [] [ renderAlbumList model.albumList ]
         , HS.map StatusBarMsg (StatusBar.view model.status)
         ]
 
 
-renderCdList : CdListModel -> Html Msg
-renderCdList cdListModel =
-    case cdListModel of
+renderAlbumList : AlbumListModel -> Html Msg
+renderAlbumList albumListModel =
+    case albumListModel of
         Loading ->
             div [] [ text "Loading" ]
 
-        CDs cds ->
-            renderCdGrid cds
+        Albums albums ->
+            renderAlbumGrid albums
 
         Error ->
             div [] [ text "Error" ]
 
 
-renderCdGrid : List Cd -> Html Msg
-renderCdGrid cds =
-    div [ Styles.cdGrid ] (List.map renderCd (List.take 20 cds))
+renderAlbumGrid : List Album -> Html Msg
+renderAlbumGrid albums =
+    div [ Styles.albumGrid ] (List.map renderAlbum (List.take 20 albums))
 
 
-renderCd : Cd -> Html Msg
-renderCd cd =
+renderAlbum : Album -> Html Msg
+renderAlbum album =
     -- This is a workaround for the current forwarding situation in Elm dev mode
     let
         fullPath =
-            concat [ "/api", cd.coverPath ]
+            concat [ "/api", album.coverPath ]
     in
-    li [ Styles.cd, Styles.coverImage fullPath, onClick (CdChosen cd) ]
+    li [ Styles.album, Styles.coverImage fullPath, onClick (AlbumChosen album) ]
         [ div [ Styles.description ]
-            [ div [ Styles.title ] [ text cd.title ]
-            , div [ Styles.artist ] [ text cd.artist ]
+            [ div [ Styles.title ] [ text album.title ]
+            , div [ Styles.artist ] [ text album.artist ]
             ]
         ]
 
@@ -161,25 +161,25 @@ loadAlbums =
         }
 
 
-clearAndPlay : Cd -> Cmd Msg
-clearAndPlay cd =
+clearAndPlay : Album -> Cmd Msg
+clearAndPlay album =
     Http.post
         { url = "/api/clear_and_play"
         , body =
             Http.jsonBody
                 (JE.object
-                    [ ( "album", JE.string cd.title )
-                    , ( "album_artist", JE.string cd.artist )
+                    [ ( "album", JE.string album.title )
+                    , ( "album_artist", JE.string album.artist )
                     ]
                 )
-        , expect = Http.expectWhatever (StartedAlbum cd)
+        , expect = Http.expectWhatever (StartedAlbum album)
         }
 
 
-albumDecoder : JD.Decoder (List Cd)
+albumDecoder : JD.Decoder (List Album)
 albumDecoder =
     JD.list
-        (JD.map3 Cd
+        (JD.map3 Album
             (JD.field "album_artist" JD.string)
             (JD.field "album" JD.string)
             (JD.field "cover_path" JD.string)
