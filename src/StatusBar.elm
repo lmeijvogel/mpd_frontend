@@ -255,7 +255,7 @@ renderButton command icon =
 
 renderPlaylist : Model -> Html Msg
 renderPlaylist model =
-    div [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId) model.playlist)
+    ul [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId) model.playlist)
 
 
 renderPlaylistEntry : Maybe Int -> PlaylistEntry -> Html Msg

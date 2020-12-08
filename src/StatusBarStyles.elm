@@ -37,6 +37,8 @@ playlist =
     css
         [ height (px 170)
         , overflowY scroll
+        , listStyle none
+        , textAlign left
         ]
 
 
