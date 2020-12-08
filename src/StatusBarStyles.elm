@@ -5,6 +5,18 @@ import Html.Styled exposing (Attribute)
 import Html.Styled.Attributes exposing (css)
 
 
+panel : Attribute msg
+panel =
+    css
+        [ position fixed
+        , bottom (px 0)
+        , minHeight (px 40)
+        , width (pct 100)
+        , backgroundColor (rgb 64 64 64)
+        , color (rgb 200 200 200)
+        ]
+
+
 mainContents : Attribute msg
 mainContents =
     css
@@ -17,6 +29,14 @@ topBar : Attribute msg
 topBar =
     css
         [ width (pct 100)
+        ]
+
+
+playlist : Attribute msg
+playlist =
+    css
+        [ height (px 170)
+        , overflowY scroll
         ]
 
 

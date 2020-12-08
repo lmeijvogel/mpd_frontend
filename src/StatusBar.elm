@@ -222,7 +222,7 @@ update message model =
 
 view : Model -> Html Msg
 view model =
-    div []
+    div [ StatusBarStyles.panel ]
         [ div [ StatusBarStyles.topBar ]
             [ renderPlayerButtons model.playbackState.state
             ]
@@ -255,7 +255,7 @@ renderButton command icon =
 
 renderPlaylist : Model -> Html Msg
 renderPlaylist model =
-    div [] (List.map (renderPlaylistEntry model.playbackState.songId) model.playlist)
+    div [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId) model.playlist)
 
 
 renderPlaylistEntry : Maybe Int -> PlaylistEntry -> Html Msg
