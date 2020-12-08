@@ -20,6 +20,7 @@ import String exposing (toLower)
 type alias Model =
     { playlist : List PlaylistEntry
     , playbackState : PlaybackState
+    , showPanel : Bool
     }
 
 
@@ -84,6 +85,7 @@ init : Model
 init =
     { playlist = []
     , playbackState = initPlaybackState
+    , showPanel = False
     }
 
 
@@ -177,6 +179,7 @@ type Msg
     | StoredPlaybackSetting PlaybackSetting Bool (Result Http.Error ())
     | ClickedPlayerCommand PlayerCommand
     | SentPlayerCommand (Result Http.Error ())
+    | ShowHideIconClicked Bool
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -215,6 +218,9 @@ update message model =
         SentPlayerCommand command ->
             ( model, loadPlaybackState )
 
+        ShowHideIconClicked newState ->
+            ( { model | showPanel = newState }, Cmd.none )
+
 
 
 -- VIEW
@@ -223,10 +229,8 @@ update message model =
 view : Model -> Html Msg
 view model =
     div [ StatusBarStyles.panel ]
-        [ div [ StatusBarStyles.topBar ]
-            [ renderTopBar model
-            ]
-        , div [ StatusBarStyles.mainContents ]
+        [ renderTopBar model
+        , div [ StatusBarStyles.mainContents model.showPanel ]
             [ renderPlaylist model
             , div []
                 (List.map (renderCheckbox model)
@@ -241,7 +245,7 @@ renderTopBar model =
     div [ StatusBarStyles.topBar ]
         [ renderPlayerButtons model.playbackState.state
         , renderCurrentSong model
-        , div [] [] -- Placeholder so the title ends up in the center
+        , renderShowHideButton model.showPanel
         ]
 
 
@@ -249,7 +253,7 @@ renderCurrentSong : Model -> Html Msg
 renderCurrentSong model =
     case model.playbackState.songId of
         Nothing ->
-            span [] []
+            div [] []
 
         Just songId ->
             let
@@ -262,9 +266,9 @@ renderCurrentSong model =
                             ""
 
                         Just song ->
-                            song.title
+                            song.artist ++ " - " ++ song.title
             in
-            span [] [ text title ]
+            div [] [ text title ]
 
 
 renderPlayerButtons : PlayerState -> Html Msg
@@ -282,6 +286,19 @@ renderButton : PlayerCommand -> Icon.Icon -> Html Msg
 renderButton command icon =
     HS.span [ StatusBarStyles.controlButton, onClick (ClickedPlayerCommand command) ]
         [ HS.fromUnstyled (Icon.viewIcon icon) ]
+
+
+renderShowHideButton : Bool -> Html Msg
+renderShowHideButton currentlyShowing =
+    let
+        icon =
+            if currentlyShowing then
+                Icon.angleDoubleDown
+
+            else
+                Icon.angleDoubleUp
+    in
+    div [ onClick (ShowHideIconClicked (not currentlyShowing)) ] [ HS.fromUnstyled (Icon.viewIcon icon) ]
 
 
 renderPlaylist : Model -> Html Msg

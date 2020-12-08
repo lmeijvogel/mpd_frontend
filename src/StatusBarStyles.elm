@@ -10,19 +10,23 @@ panel =
     css
         [ position fixed
         , bottom (px 0)
-        , minHeight (px 40)
+        , minHeight (px 45)
         , width (pct 100)
         , backgroundColor (rgb 64 64 64)
         , color (rgb 200 200 200)
         ]
 
 
-mainContents : Attribute msg
-mainContents =
-    css
-        [ displayFlex
-        , flexDirection row
-        ]
+mainContents : Bool -> Attribute msg
+mainContents showContents =
+    if showContents then
+        css
+            [ displayFlex
+            , flexDirection row
+            ]
+
+    else
+        css [ display none ]
 
 
 topBar : Attribute msg
@@ -32,7 +36,8 @@ topBar =
         , justifyContent spaceBetween
         , alignItems center
         , flexDirection row
-        , width (pct 100)
+        , height (px 45)
+        , padding2 (px 0) (px 10)
         ]
 
 
@@ -40,6 +45,7 @@ playlist : Attribute msg
 playlist =
     css
         [ height (px 170)
+        , margin (px 0)
         , overflowY scroll
         , listStyle none
         , textAlign left
@@ -58,5 +64,5 @@ controlButton : Attribute msg
 controlButton =
     css
         [ fontSize (pt 20)
-        , margin (px 8)
+        , margin2 (px 16) (px 8)
         ]
