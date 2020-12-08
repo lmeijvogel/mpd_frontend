@@ -28,7 +28,11 @@ mainContents =
 topBar : Attribute msg
 topBar =
     css
-        [ width (pct 100)
+        [ displayFlex
+        , justifyContent spaceBetween
+        , alignItems center
+        , flexDirection row
+        , width (pct 100)
         ]
 
 

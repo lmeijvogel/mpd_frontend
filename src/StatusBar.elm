@@ -224,7 +224,7 @@ view : Model -> Html Msg
 view model =
     div [ StatusBarStyles.panel ]
         [ div [ StatusBarStyles.topBar ]
-            [ renderPlayerButtons model.playbackState.state
+            [ renderTopBar model
             ]
         , div [ StatusBarStyles.mainContents ]
             [ renderPlaylist model
@@ -234,6 +234,37 @@ view model =
                 )
             ]
         ]
+
+
+renderTopBar : Model -> Html Msg
+renderTopBar model =
+    div [ StatusBarStyles.topBar ]
+        [ renderPlayerButtons model.playbackState.state
+        , renderCurrentSong model
+        , div [] [] -- Placeholder so the title ends up in the center
+        ]
+
+
+renderCurrentSong : Model -> Html Msg
+renderCurrentSong model =
+    case model.playbackState.songId of
+        Nothing ->
+            span [] []
+
+        Just songId ->
+            let
+                currentSong =
+                    List.filter (\item -> item.id == songId) model.playlist |> List.head
+
+                title =
+                    case currentSong of
+                        Nothing ->
+                            ""
+
+                        Just song ->
+                            song.title
+            in
+            span [] [ text title ]
 
 
 renderPlayerButtons : PlayerState -> Html Msg
