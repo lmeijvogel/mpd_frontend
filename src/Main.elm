@@ -103,7 +103,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 Ok _ ->
-                    ( { model | currentCd = Just cd, state = Playing }, Cmd.none )
+                    ( { model | currentCd = Just cd, state = Playing }, Cmd.map StatusBarMsg StatusBar.load )
 
 
 
