@@ -4,7 +4,7 @@ import FontAwesome.Icon as Icon exposing (Icon)
 import FontAwesome.Solid as Icon
 import Html.Styled as HS exposing (..)
 import Html.Styled.Attributes exposing (src)
-import Html.Styled.Events exposing (onClick)
+import Html.Styled.Events exposing (onClick, onDoubleClick)
 import Http exposing (jsonBody)
 import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
@@ -178,6 +178,7 @@ type Msg
     | ChangedPlaybackSetting PlaybackSetting Bool
     | StoredPlaybackSetting PlaybackSetting Bool (Result Http.Error ())
     | ClickedPlayerCommand PlayerCommand
+    | PlaylistEntryClicked PlaylistEntry
     | SentPlayerCommand (Result Http.Error ())
     | ShowHideIconClicked Bool
 
@@ -214,6 +215,9 @@ update message model =
 
         ClickedPlayerCommand command ->
             ( model, sendPlayerCommand command )
+
+        PlaylistEntryClicked playlistEntry ->
+            ( model, startSong playlistEntry )
 
         SentPlayerCommand command ->
             ( model, loadPlaybackState )
@@ -309,6 +313,9 @@ renderPlaylist model =
 renderPlaylistEntry : Maybe Int -> PlaylistEntry -> Html Msg
 renderPlaylistEntry currentSongId entry =
     let
+        clickHandler =
+            onDoubleClick (PlaylistEntryClicked entry)
+
         isSongSelected =
             case currentSongId of
                 Nothing ->
@@ -319,10 +326,10 @@ renderPlaylistEntry currentSongId entry =
 
         elementClass =
             if isSongSelected then
-                [ StatusBarStyles.selected ]
+                [ clickHandler, StatusBarStyles.selected ]
 
             else
-                []
+                [ clickHandler ]
     in
     li elementClass [ text entry.title ]
 
@@ -417,6 +424,19 @@ sendPlayerCommand command =
             Http.jsonBody
                 (JE.object
                     [ ( "command", JE.string commandString ) ]
+                )
+        , expect = Http.expectWhatever SentPlayerCommand
+        }
+
+
+startSong : PlaylistEntry -> Cmd Msg
+startSong playlistEntry =
+    Http.post
+        { url = "api/play_id"
+        , body =
+            Http.jsonBody
+                (JE.object
+                    [ ( "id", JE.int playlistEntry.id ) ]
                 )
         , expect = Http.expectWhatever SentPlayerCommand
         }
