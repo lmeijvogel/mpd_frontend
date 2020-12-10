@@ -14,6 +14,7 @@ panel =
         , width (pct 100)
         , backgroundColor (rgb 64 64 64)
         , color (rgb 200 200 200)
+        , property "user-select" "none"
         ]
 
 
