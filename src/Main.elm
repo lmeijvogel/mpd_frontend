@@ -5,7 +5,7 @@ import Dict exposing (Dict)
 import FontAwesome.Styles
 import Html.Styled as HS exposing (..)
 import Html.Styled.Attributes exposing (src)
-import Html.Styled.Events exposing (onClick)
+import Html.Styled.Events exposing (onClick, onDoubleClick)
 import Http exposing (jsonBody)
 import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list, nullable, string)
 import Json.Decode.Extra
@@ -145,7 +145,7 @@ renderAlbum album =
         fullPath =
             concat [ "/api", album.coverPath ]
     in
-    li [ Styles.album, Styles.coverImage fullPath, onClick (AlbumChosen album) ]
+    li [ Styles.album, Styles.coverImage fullPath, onDoubleClick (AlbumChosen album) ]
         [ div [ Styles.description ]
             [ div [ Styles.title ] [ text album.title ]
             , div [ Styles.artist ] [ text album.artist ]
