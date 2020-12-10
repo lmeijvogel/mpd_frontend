@@ -65,4 +65,12 @@ controlButton =
     css
         [ fontSize (pt 20)
         , margin2 (px 16) (px 8)
+        , color (rgb 128 128 128)
+        ]
+
+
+activeButton : Attribute msg
+activeButton =
+    css
+        [ color (rgb 255 255 255)
         ]

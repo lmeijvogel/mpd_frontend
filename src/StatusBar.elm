@@ -336,7 +336,41 @@ renderPlaylistEntry currentSongId entry =
 
 renderCheckbox : Model -> PlaybackSetting -> Html Msg
 renderCheckbox model setting =
-    span [] [ HS.input [ Html.Styled.Attributes.type_ "checkbox", Html.Styled.Attributes.checked (getValueFromStatus model.playbackState setting), Html.Styled.Events.onCheck (ChangedPlaybackSetting setting) ] [], span [] [ text (getNameFromSetting setting) ] ]
+    let
+        isActive =
+            getValueFromStatus model.playbackState setting
+
+        class : List (Attribute Msg)
+        class =
+            case isActive of
+                True ->
+                    [ StatusBarStyles.controlButton, StatusBarStyles.activeButton ]
+
+                False ->
+                    [ StatusBarStyles.controlButton ]
+
+        clickHandler : List (Attribute Msg)
+        clickHandler =
+            [ onClick (ChangedPlaybackSetting setting (not isActive)) ]
+    in
+    span (class ++ clickHandler) [ HS.fromUnstyled (Icon.viewIcon (getIconForSetting setting)) ]
+
+
+getIconForSetting : PlaybackSetting -> Icon.Icon
+getIconForSetting setting =
+    -- HS.input [ Html.Styled.Attributes.type_ "checkbox", Html.Styled.Attributes.checked (getValueFromStatus model.playbackState setting), Html.Styled.Events.onCheck (ChangedPlaybackSetting setting) ] []
+    case setting of
+        Repeat ->
+            Icon.retweet
+
+        Single ->
+            Icon.handPointUp
+
+        Random ->
+            Icon.random
+
+        Consume ->
+            Icon.cut
 
 
 getNameFromSetting : PlaybackSetting -> String
