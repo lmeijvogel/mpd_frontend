@@ -181,6 +181,7 @@ type Msg
     | PlaylistEntryClicked PlaylistEntry
     | SentPlayerCommand (Result Http.Error ())
     | ShowHideIconClicked Bool
+    | Tick
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -224,6 +225,9 @@ update message model =
 
         ShowHideIconClicked newState ->
             ( { model | showPanel = newState }, Cmd.none )
+
+        Tick ->
+            ( model, loadPlaybackState )
 
 
 
@@ -510,3 +514,8 @@ loadPlaybackState =
         { url = "/api/status"
         , expect = Http.expectJson ReceivedStatus decodePlaybackState
         }
+
+
+tick : Cmd Msg
+tick =
+    loadPlaybackState

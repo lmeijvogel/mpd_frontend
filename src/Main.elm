@@ -14,6 +14,7 @@ import Json.Encode as JE
 import StatusBar exposing (..)
 import String exposing (concat)
 import Styles
+import Time
 
 
 
@@ -75,6 +76,7 @@ type Msg
     | AlbumChosen Album
     | StartedAlbum Album (Result Http.Error ())
     | StatusBarMsg StatusBar.Msg
+    | Tick Time.Posix
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -105,6 +107,9 @@ update msg model =
 
                 Ok _ ->
                     ( { model | currentAlbum = Just album, state = Playing }, Cmd.map StatusBarMsg StatusBar.load )
+
+        Tick time ->
+            ( model, Cmd.map StatusBarMsg StatusBar.tick )
 
 
 
@@ -188,4 +193,4 @@ albumDecoder =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Time.every 2000 Tick
