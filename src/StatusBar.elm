@@ -11,6 +11,7 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
 import StatusBarStyles
 import String exposing (toLower)
+import Time
 
 
 
@@ -21,6 +22,7 @@ type alias Model =
     { playlist : List PlaylistEntry
     , playbackState : PlaybackState
     , showPanel : Bool
+    , secondsSinceLastUpdate : Int
     }
 
 
@@ -58,6 +60,7 @@ type PlayerCommand
 
 type PlayerState
     = Playing
+    | Paused
     | Stopped
 
 
@@ -85,7 +88,8 @@ init : Model
 init =
     { playlist = []
     , playbackState = initPlaybackState
-    , showPanel = False
+    , showPanel = True
+    , secondsSinceLastUpdate = 0
     }
 
 
@@ -164,6 +168,9 @@ stringStateToPlayerState input =
         "play" ->
             Playing
 
+        "pause" ->
+            Paused
+
         _ ->
             Stopped
 
@@ -181,7 +188,6 @@ type Msg
     | PlaylistEntryClicked PlaylistEntry
     | SentPlayerCommand (Result Http.Error ())
     | ShowHideIconClicked Bool
-    | Tick
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -193,7 +199,7 @@ update message model =
                     ( model, Cmd.none )
 
                 Ok newStatus ->
-                    ( { model | playbackState = newStatus }, Cmd.none )
+                    ( { model | playbackState = newStatus, secondsSinceLastUpdate = 0 }, Cmd.none )
 
         ReceivedPlaylist result ->
             case result of
@@ -226,9 +232,6 @@ update message model =
         ShowHideIconClicked newState ->
             ( { model | showPanel = newState }, Cmd.none )
 
-        Tick ->
-            ( model, loadPlaybackState )
-
 
 
 -- VIEW
@@ -253,6 +256,7 @@ renderTopBar model =
     div [ StatusBarStyles.topBar ]
         [ renderPlayerButtons model.playbackState.state
         , renderCurrentSong model
+        , renderSongProgress model
         , renderShowHideButton model.showPanel
         ]
 
@@ -277,6 +281,50 @@ renderCurrentSong model =
                             song.artist ++ " - " ++ song.title
             in
             div [] [ text title ]
+
+
+renderSongProgress : Model -> Html Msg
+renderSongProgress model =
+    let
+        formattedValue =
+            case model.playbackState.duration of
+                Just duration ->
+                    case model.playbackState.elapsed of
+                        Just elapsed ->
+                            formatCurrentTimeInSong (elapsed + toFloat model.secondsSinceLastUpdate) duration
+
+                        Nothing ->
+                            formatSongDuration duration
+
+                Nothing ->
+                    ""
+    in
+    div [] [ text formattedValue ]
+
+
+formatCurrentTimeInSong : Float -> Float -> String
+formatCurrentTimeInSong elapsed duration =
+    formatAsTime elapsed ++ "/" ++ formatAsTime duration
+
+
+formatSongDuration : Float -> String
+formatSongDuration duration =
+    formatAsTime duration
+
+
+formatAsTime : Float -> String
+formatAsTime seconds =
+    let
+        intSeconds =
+            floor seconds
+
+        minutes =
+            intSeconds // 60 |> String.fromInt
+
+        onlySeconds =
+            modBy 60 intSeconds |> String.fromInt |> String.padLeft 2 '0'
+    in
+    minutes ++ ":" ++ onlySeconds
 
 
 renderPlayerButtons : PlayerState -> Html Msg
@@ -514,8 +562,3 @@ loadPlaybackState =
         { url = "/api/status"
         , expect = Http.expectJson ReceivedStatus decodePlaybackState
         }
-
-
-tick : Cmd Msg
-tick =
-    loadPlaybackState

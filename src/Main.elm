@@ -76,7 +76,8 @@ type Msg
     | AlbumChosen Album
     | StartedAlbum Album (Result Http.Error ())
     | StatusBarMsg StatusBar.Msg
-    | Tick Time.Posix
+    | TriggerRetrieveStatus Time.Posix
+    | TriggerUpdateClock Time.Posix
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -108,8 +109,30 @@ update msg model =
                 Ok _ ->
                     ( { model | currentAlbum = Just album, state = Playing }, Cmd.map StatusBarMsg StatusBar.load )
 
-        Tick time ->
-            ( model, Cmd.map StatusBarMsg StatusBar.tick )
+        TriggerRetrieveStatus time ->
+            ( model, Cmd.map StatusBarMsg StatusBar.loadPlaybackState )
+
+        TriggerUpdateClock time ->
+            let
+                currentStatus =
+                    model.status
+
+                newSecondsSinceLastUpdated =
+                    if isPaused model then
+                        currentStatus.secondsSinceLastUpdate
+
+                    else
+                        currentStatus.secondsSinceLastUpdate + 1
+
+                newStatus =
+                    { currentStatus | secondsSinceLastUpdate = newSecondsSinceLastUpdated }
+            in
+            ( { model | status = newStatus }, Cmd.none )
+
+
+isPaused : Model -> Bool
+isPaused model =
+    model.status.playbackState.state == Paused
 
 
 
@@ -193,4 +216,7 @@ albumDecoder =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every 2000 Tick
+    Sub.batch
+        [ Time.every 5000 TriggerRetrieveStatus
+        , Time.every 1000 TriggerUpdateClock
+        ]
