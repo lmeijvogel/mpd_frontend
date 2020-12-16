@@ -163,7 +163,7 @@ renderAlbumList albumListModel =
 
 renderAlbumGrid : List Album -> Html Msg
 renderAlbumGrid albums =
-    div [ Styles.albumGrid ] (List.map renderAlbum (List.take 20 albums))
+    div [ Styles.albumGrid ] (List.map renderAlbum albums)
 
 
 renderAlbum : Album -> Html Msg

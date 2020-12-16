@@ -145,8 +145,8 @@ decodePlayer : Decoder (Maybe Player)
 decodePlayer =
     JD.maybe <|
         JD.map2 Player
-            (JD.field "name" string)
             (JD.field "ip" string)
+            (JD.field "name" string)
 
 
 decodeOutput : Decoder Output
