@@ -39,7 +39,6 @@ type alias Model =
     { playerList : PlayersListModel
     , albumList : AlbumListModel
     , currentAlbum : Maybe Album
-    , state : PlayerState
     , status : StatusBar.Model
     }
 
@@ -68,7 +67,6 @@ init _ =
     ( { playerList = PlayersLoading
       , albumList = Loading
       , currentAlbum = Nothing
-      , state = Stopped
       , status = StatusBar.init
       }
       -- Players are only loaded once to fix strange results
@@ -78,6 +76,7 @@ init _ =
     )
 
 
+fireInitCmds : Cmd Msg
 fireInitCmds =
     Cmd.batch [ loadAlbums, loadStatus ]
 
@@ -164,7 +163,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 Ok _ ->
-                    ( { model | currentAlbum = Just album, state = Playing }, Cmd.map StatusBarMsg StatusBar.load )
+                    ( { model | currentAlbum = Just album }, Cmd.map StatusBarMsg StatusBar.load )
 
         TriggerRetrieveStatus time ->
             ( model, Cmd.map StatusBarMsg StatusBar.loadPlaybackState )
@@ -215,7 +214,7 @@ replacePlayerInStatus model ip =
 
 isPaused : Model -> Bool
 isPaused model =
-    model.state == Paused
+    model.status.playbackState.state == Paused
 
 
 
