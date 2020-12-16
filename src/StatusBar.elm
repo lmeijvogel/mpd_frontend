@@ -330,17 +330,25 @@ formatAsTime seconds =
 renderPlayerButtons : PlayerState -> Html Msg
 renderPlayerButtons state =
     div []
-        [ renderButton Previous Icon.stepBackward
-        , renderButton Play Icon.play
-        , renderButton Pause Icon.pause
-        , renderButton Stop Icon.stop
-        , renderButton Next Icon.stepForward
+        [ renderButton Previous Icon.stepBackward False
+        , renderButton Play Icon.play (state == Playing)
+        , renderButton Pause Icon.pause (state == Paused)
+        , renderButton Stop Icon.stop (state == Stopped)
+        , renderButton Next Icon.stepForward False
         ]
 
 
-renderButton : PlayerCommand -> Icon.Icon -> Html Msg
-renderButton command icon =
-    HS.span [ StatusBarStyles.controlButton, onClick (ClickedPlayerCommand command) ]
+renderButton : PlayerCommand -> Icon.Icon -> Bool -> Html Msg
+renderButton command icon isActive =
+    let
+        isActiveStyling =
+            if isActive then
+                [ StatusBarStyles.activeButton ]
+
+            else
+                []
+    in
+    HS.span ([ StatusBarStyles.controlButton, onClick (ClickedPlayerCommand command) ] ++ isActiveStyling)
         [ HS.fromUnstyled (Icon.viewIcon icon) ]
 
 
