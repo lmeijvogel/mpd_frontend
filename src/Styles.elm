@@ -13,6 +13,14 @@ body =
         ]
 
 
+playerSelector : Attribute msg
+playerSelector =
+    css
+        [ backgroundColor (rgb 0 0 0)
+        , color (rgb 255 255 255)
+        ]
+
+
 albumGrid : Attribute msg
 albumGrid =
     css
