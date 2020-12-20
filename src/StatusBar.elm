@@ -237,8 +237,8 @@ update message model =
 -- VIEW
 
 
-view : Model -> Html Msg
-view model =
+view : Player -> Model -> Html Msg
+view player model =
     div [ StatusBarStyles.panel ]
         [ renderTopBar model
         , div [ StatusBarStyles.mainContents model.showPanel ]

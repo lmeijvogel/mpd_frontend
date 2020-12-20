@@ -16,8 +16,39 @@ body =
 playerSelector : Attribute msg
 playerSelector =
     css
+        [ displayFlex
+        , flexDirection row
+        , height (px 50)
+        , listStyle none
+        , margin (px 0)
+        , padding (px 0)
+        , backgroundColor (rgb 0 0 0)
+        , color (rgb 255 255 255)
+        ]
+
+
+player : Attribute msg
+player =
+    css
+        [ margin2 (px 0) (px 5)
+        ]
+
+
+playerLink : Attribute msg
+playerLink =
+    css
         [ backgroundColor (rgb 0 0 0)
         , color (rgb 255 255 255)
+        , textDecoration none
+        , padding2 (px 10) (px 10)
+        ]
+
+
+selectedPlayer : Attribute msg
+selectedPlayer =
+    css
+        [ backgroundColor (rgb 255 255 255)
+        , color (rgb 0 0 0)
         ]
 
 
