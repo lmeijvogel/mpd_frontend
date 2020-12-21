@@ -10,6 +10,9 @@ body =
     css
         [ width (pct 100)
         , textAlign center
+        , backgroundColor (rgb 0 0 0)
+        , color (rgb 255 255 255)
+        , height (vh 100)
         ]
 
 
@@ -19,11 +22,11 @@ playerSelector =
         [ displayFlex
         , flexDirection row
         , height (px 50)
+        , justifyContent flexEnd
+        , alignItems center
         , listStyle none
         , margin (px 0)
         , padding (px 0)
-        , backgroundColor (rgb 0 0 0)
-        , color (rgb 255 255 255)
         ]
 
 
