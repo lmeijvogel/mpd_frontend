@@ -93,7 +93,7 @@ fireInitCmds maybePlayer =
             Cmd.none
 
         Just player ->
-            Cmd.batch [ loadAlbums player, loadStatus ]
+            Cmd.batch [ loadAlbums player, loadStatus player ]
 
 
 
@@ -106,10 +106,10 @@ type Msg
     | SelectedPlayer String (Result Http.Error ())
     | ReceivedAlbums (Result Http.Error (List Album))
     | AlbumChosen Player Album
-    | StartedAlbum Album (Result Http.Error ())
+    | StartedAlbum Player Album (Result Http.Error ())
     | StatusBarMsg StatusBar.Msg
-    | TriggerRetrieveStatus Time.Posix
-    | TriggerUpdateClock Time.Posix
+    | TriggerRetrieveStatus (Maybe Player) Time.Posix
+    | TriggerUpdateClock (Maybe Player) Time.Posix
     | UrlChanged Url.Url
     | LinkClicked Browser.UrlRequest
 
@@ -182,18 +182,27 @@ update msg model =
         AlbumChosen player album ->
             ( model, clearAndPlay player album )
 
-        StartedAlbum album result ->
+        StartedAlbum player album result ->
             case result of
                 Err _ ->
                     ( model, Cmd.none )
 
                 Ok _ ->
-                    ( { model | currentAlbum = Just album }, Cmd.map StatusBarMsg StatusBar.load )
+                    ( { model | currentAlbum = Just album }, Cmd.map StatusBarMsg (StatusBar.load player) )
 
-        TriggerRetrieveStatus time ->
-            ( model, Cmd.map StatusBarMsg StatusBar.loadPlaybackState )
+        TriggerRetrieveStatus maybePlayer time ->
+            let
+                cmd =
+                    case maybePlayer of
+                        Nothing ->
+                            Cmd.none
 
-        TriggerUpdateClock time ->
+                        Just player ->
+                            Cmd.map StatusBarMsg (StatusBar.loadPlaybackState player)
+            in
+            ( model, cmd )
+
+        TriggerUpdateClock maybePlayer time ->
             let
                 currentStatus =
                     model.status
@@ -446,20 +455,15 @@ buildPlayerUrl string player =
     String.concat [ "/api/", playerPart, "/", string ]
 
 
-loadStatus : Cmd Msg
-loadStatus =
-    Cmd.map StatusBarMsg StatusBar.load
+loadStatus : Player -> Cmd Msg
+loadStatus player =
+    Cmd.map StatusBarMsg (StatusBar.load player)
 
 
 clearAndPlay : Player -> Album -> Cmd Msg
 clearAndPlay player album =
     Http.post
-        { url =
-            String.concat
-                [ "/api"
-                , "/" ++ String.toLower player.name
-                , "/clear_and_play"
-                ]
+        { url = buildPlayerUrl "clear_and_play" player
         , body =
             Http.jsonBody
                 (JE.object
@@ -467,7 +471,7 @@ clearAndPlay player album =
                     , ( "album_artist", JE.string album.artist )
                     ]
                 )
-        , expect = Http.expectWhatever (StartedAlbum album)
+        , expect = Http.expectWhatever (StartedAlbum player album)
         }
 
 
@@ -493,8 +497,8 @@ playerListDecoder =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Time.every 5000 TriggerRetrieveStatus
-        , Time.every 1000 TriggerUpdateClock
+        [ Time.every 5000 (TriggerRetrieveStatus model.player)
+        , Time.every 1000 (TriggerUpdateClock model.player)
         ]
 
 

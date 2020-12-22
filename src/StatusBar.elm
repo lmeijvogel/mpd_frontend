@@ -182,11 +182,11 @@ stringStateToPlayerState input =
 type Msg
     = ReceivedStatus (Result Http.Error PlaybackState)
     | ReceivedPlaylist (Result Http.Error (List PlaylistEntry))
-    | ChangedPlaybackSetting PlaybackSetting Bool
-    | StoredPlaybackSetting PlaybackSetting Bool (Result Http.Error ())
-    | ClickedPlayerCommand PlayerCommand
-    | PlaylistEntryClicked PlaylistEntry
-    | SentPlayerCommand (Result Http.Error ())
+    | ChangedPlaybackSetting Player PlaybackSetting Bool
+    | StoredPlaybackSetting Player PlaybackSetting Bool (Result Http.Error ())
+    | ClickedPlayerCommand Player PlayerCommand
+    | PlaylistEntryClicked Player PlaylistEntry
+    | SentPlayerCommand Player (Result Http.Error ())
     | ShowHideIconClicked Bool
 
 
@@ -209,10 +209,10 @@ update message model =
                 Ok entries ->
                     ( { model | playlist = entries }, Cmd.none )
 
-        ChangedPlaybackSetting setting value ->
-            ( model, storePlaybackSetting setting value )
+        ChangedPlaybackSetting player setting value ->
+            ( model, storePlaybackSetting player setting value )
 
-        StoredPlaybackSetting setting value result ->
+        StoredPlaybackSetting player setting value result ->
             case result of
                 Err _ ->
                     ( model, Cmd.none )
@@ -220,14 +220,14 @@ update message model =
                 Ok _ ->
                     ( { model | playbackState = updateSetting model.playbackState setting value }, Cmd.none )
 
-        ClickedPlayerCommand command ->
-            ( model, sendPlayerCommand command )
+        ClickedPlayerCommand player command ->
+            ( model, sendPlayerCommand player command )
 
-        PlaylistEntryClicked playlistEntry ->
-            ( model, startSong playlistEntry )
+        PlaylistEntryClicked player playlistEntry ->
+            ( model, startSong player playlistEntry )
 
-        SentPlayerCommand command ->
-            ( model, loadPlaybackState )
+        SentPlayerCommand player command ->
+            ( model, loadPlaybackState player )
 
         ShowHideIconClicked newState ->
             ( { model | showPanel = newState }, Cmd.none )
@@ -240,21 +240,21 @@ update message model =
 view : Player -> Model -> Html Msg
 view player model =
     div [ StatusBarStyles.panel ]
-        [ renderTopBar model
+        [ renderTopBar player model
         , div [ StatusBarStyles.mainContents model.showPanel ]
-            [ renderPlaylist model
+            [ renderPlaylist player model
             , div []
-                (List.map (renderCheckbox model)
+                (List.map (renderCheckbox player model)
                     [ Repeat, Single, Random, Consume ]
                 )
             ]
         ]
 
 
-renderTopBar : Model -> Html Msg
-renderTopBar model =
+renderTopBar : Player -> Model -> Html Msg
+renderTopBar player model =
     div [ StatusBarStyles.topBar ]
-        [ renderPlayerButtons model.playbackState.state
+        [ renderPlayerButtons player model.playbackState.state
         , renderCurrentSong model
         , renderSongProgress model
         , renderShowHideButton model.showPanel
@@ -327,19 +327,19 @@ formatAsTime seconds =
     minutes ++ ":" ++ onlySeconds
 
 
-renderPlayerButtons : PlayerState -> Html Msg
-renderPlayerButtons state =
+renderPlayerButtons : Player -> PlayerState -> Html Msg
+renderPlayerButtons player state =
     div []
-        [ renderButton Previous Icon.stepBackward False
-        , renderButton Play Icon.play (state == Playing)
-        , renderButton Pause Icon.pause (state == Paused)
-        , renderButton Stop Icon.stop (state == Stopped)
-        , renderButton Next Icon.stepForward False
+        [ renderButton player Previous Icon.stepBackward False
+        , renderButton player Play Icon.play (state == Playing)
+        , renderButton player Pause Icon.pause (state == Paused)
+        , renderButton player Stop Icon.stop (state == Stopped)
+        , renderButton player Next Icon.stepForward False
         ]
 
 
-renderButton : PlayerCommand -> Icon.Icon -> Bool -> Html Msg
-renderButton command icon isActive =
+renderButton : Player -> PlayerCommand -> Icon.Icon -> Bool -> Html Msg
+renderButton player command icon isActive =
     let
         isActiveStyling =
             if isActive then
@@ -348,7 +348,7 @@ renderButton command icon isActive =
             else
                 []
     in
-    HS.span ([ StatusBarStyles.controlButton, onClick (ClickedPlayerCommand command) ] ++ isActiveStyling)
+    HS.span ([ StatusBarStyles.controlButton, onClick (ClickedPlayerCommand player command) ] ++ isActiveStyling)
         [ HS.fromUnstyled (Icon.viewIcon icon) ]
 
 
@@ -365,16 +365,16 @@ renderShowHideButton currentlyShowing =
     div [ onClick (ShowHideIconClicked (not currentlyShowing)) ] [ HS.fromUnstyled (Icon.viewIcon icon) ]
 
 
-renderPlaylist : Model -> Html Msg
-renderPlaylist model =
-    ul [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId) model.playlist)
+renderPlaylist : Player -> Model -> Html Msg
+renderPlaylist player model =
+    ul [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId player) model.playlist)
 
 
-renderPlaylistEntry : Maybe Int -> PlaylistEntry -> Html Msg
-renderPlaylistEntry currentSongId entry =
+renderPlaylistEntry : Maybe Int -> Player -> PlaylistEntry -> Html Msg
+renderPlaylistEntry currentSongId player entry =
     let
         clickHandler =
-            onDoubleClick (PlaylistEntryClicked entry)
+            onDoubleClick (PlaylistEntryClicked player entry)
 
         isSongSelected =
             case currentSongId of
@@ -394,8 +394,8 @@ renderPlaylistEntry currentSongId entry =
     li elementClass [ text entry.title ]
 
 
-renderCheckbox : Model -> PlaybackSetting -> Html Msg
-renderCheckbox model setting =
+renderCheckbox : Player -> Model -> PlaybackSetting -> Html Msg
+renderCheckbox player model setting =
     let
         isActive =
             getValueFromStatus model.playbackState setting
@@ -411,7 +411,7 @@ renderCheckbox model setting =
 
         clickHandler : List (Attribute Msg)
         clickHandler =
-            [ onClick (ChangedPlaybackSetting setting (not isActive)) ]
+            [ onClick (ChangedPlaybackSetting player setting (not isActive)) ]
     in
     span (class ++ clickHandler) [ HS.fromUnstyled (Icon.viewIcon (getIconForSetting setting)) ]
 
@@ -465,8 +465,8 @@ getValueFromStatus state setting =
             state.consume
 
 
-storePlaybackSetting : PlaybackSetting -> Bool -> Cmd Msg
-storePlaybackSetting setting value =
+storePlaybackSetting : Player -> PlaybackSetting -> Bool -> Cmd Msg
+storePlaybackSetting player setting value =
     let
         requestSettingName =
             getNameFromSetting setting |> toLower
@@ -480,7 +480,7 @@ storePlaybackSetting setting value =
                     "0"
     in
     Http.post
-        { url = "/api/update_playback_setting"
+        { url = buildPlayerUrl "update_playback_setting" player
         , body =
             Http.jsonBody
                 (JE.object
@@ -488,12 +488,12 @@ storePlaybackSetting setting value =
                     , ( "value", JE.string requestValue )
                     ]
                 )
-        , expect = Http.expectWhatever (StoredPlaybackSetting setting value)
+        , expect = Http.expectWhatever (StoredPlaybackSetting player setting value)
         }
 
 
-sendPlayerCommand : PlayerCommand -> Cmd Msg
-sendPlayerCommand command =
+sendPlayerCommand : Player -> PlayerCommand -> Cmd Msg
+sendPlayerCommand player command =
     let
         commandString =
             case command of
@@ -513,33 +513,33 @@ sendPlayerCommand command =
                     "next"
     in
     Http.post
-        { url = "api/command"
+        { url = buildPlayerUrl "command" player
         , body =
             Http.jsonBody
                 (JE.object
                     [ ( "command", JE.string commandString ) ]
                 )
-        , expect = Http.expectWhatever SentPlayerCommand
+        , expect = Http.expectWhatever (SentPlayerCommand player)
         }
 
 
-startSong : PlaylistEntry -> Cmd Msg
-startSong playlistEntry =
+startSong : Player -> PlaylistEntry -> Cmd Msg
+startSong player playlistEntry =
     Http.post
-        { url = "api/play_id"
+        { url = buildPlayerUrl "play_id" player
         , body =
             Http.jsonBody
                 (JE.object
                     [ ( "id", JE.int playlistEntry.id ) ]
                 )
-        , expect = Http.expectWhatever SentPlayerCommand
+        , expect = Http.expectWhatever (SentPlayerCommand player)
         }
 
 
-loadPlaylist : Cmd Msg
-loadPlaylist =
+loadPlaylist : Player -> Cmd Msg
+loadPlaylist player =
     Http.get
-        { url = "/api/playlist"
+        { url = buildPlayerUrl "playlist" player
         , expect = Http.expectJson ReceivedPlaylist playlistDecoder
         }
 
@@ -556,17 +556,26 @@ playlistDecoder =
         )
 
 
-load : Cmd Msg
-load =
+load : Player -> Cmd Msg
+load player =
     Cmd.batch
-        [ loadPlaylist
-        , loadPlaybackState
+        [ loadPlaylist player
+        , loadPlaybackState player
         ]
 
 
-loadPlaybackState : Cmd Msg
-loadPlaybackState =
+loadPlaybackState : Player -> Cmd Msg
+loadPlaybackState player =
     Http.get
-        { url = "/api/status"
+        { url = buildPlayerUrl "status" player
         , expect = Http.expectJson ReceivedStatus decodePlaybackState
         }
+
+
+buildPlayerUrl : String -> Player -> String
+buildPlayerUrl string player =
+    let
+        playerPart =
+            String.toLower player.name
+    in
+    String.concat [ "/api/", playerPart, "/", string ]
