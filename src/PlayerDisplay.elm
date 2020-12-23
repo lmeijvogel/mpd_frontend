@@ -92,8 +92,11 @@ triggerUpdateClock time model =
         currentStatus =
             model.status
 
+        isPaused =
+            model.status.playbackState.state == Paused
+
         newSecondsSinceLastUpdated =
-            if isPaused model then
+            if isPaused then
                 currentStatus.secondsSinceLastUpdate
 
             else
@@ -103,11 +106,6 @@ triggerUpdateClock time model =
             { currentStatus | secondsSinceLastUpdate = newSecondsSinceLastUpdated }
     in
     { model | status = newStatus }
-
-
-isPaused : Model -> Bool
-isPaused model =
-    model.status.playbackState.state == Paused
 
 
 loadStatus : Player -> Cmd Msg
