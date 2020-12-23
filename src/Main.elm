@@ -12,6 +12,7 @@ import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list
 import Json.Decode.Extra
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
+import PlayerDisplay exposing (..)
 import StatusBar exposing (..)
 import String exposing (concat)
 import Styles
@@ -44,9 +45,7 @@ type alias Model =
     , key : Nav.Key
     , playerList : PlayersListModel
     , player : Maybe Player
-    , albumList : AlbumListModel
-    , currentAlbum : Maybe Album
-    , status : StatusBar.Model
+    , playerModel : Maybe PlayerDisplay.Model
     }
 
 
@@ -75,9 +74,7 @@ init flags url key =
       , key = key
       , playerList = PlayersLoading
       , player = Nothing
-      , albumList = Loading
-      , currentAlbum = Nothing
-      , status = StatusBar.init
+      , playerModel = Nothing
       }
       -- Players are only loaded once to fix strange results
       -- when the player selector dropdown changed by removing
@@ -86,14 +83,9 @@ init flags url key =
     )
 
 
-fireInitCmds : Maybe Player -> Cmd Msg
-fireInitCmds maybePlayer =
-    case maybePlayer of
-        Nothing ->
-            Cmd.none
-
-        Just player ->
-            Cmd.batch [ loadAlbums player, loadStatus player ]
+fireInitCmds : PlayerDisplay.Model -> Cmd Msg
+fireInitCmds playerModel =
+    Cmd.map PlayerMsg (PlayerDisplay.getAll playerModel)
 
 
 
@@ -104,14 +96,11 @@ type Msg
     = ReceivedPlayers (Result Http.Error (List Player))
     | PlayerChosen String
     | SelectedPlayer String (Result Http.Error ())
-    | ReceivedAlbums (Result Http.Error (List Album))
-    | AlbumChosen Player Album
-    | StartedAlbum Player Album (Result Http.Error ())
-    | StatusBarMsg StatusBar.Msg
     | TriggerRetrieveStatus (Maybe Player) Time.Posix
     | TriggerUpdateClock (Maybe Player) Time.Posix
     | UrlChanged Url.Url
     | LinkClicked Browser.UrlRequest
+    | PlayerMsg PlayerDisplay.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -124,71 +113,39 @@ update msg model =
 
                 Ok players ->
                     let
-                        player =
+                        maybePlayer =
                             playerFromUrl players model.url
+
+                        newPlayerModel =
+                            Maybe.map PlayerDisplay.init maybePlayer
+
+                        cmd =
+                            Maybe.map fireInitCmds newPlayerModel |> Maybe.withDefault Cmd.none
                     in
-                    ( { model | playerList = Players players, player = player }, fireInitCmds player )
+                    ( { model | playerList = Players players, player = maybePlayer, playerModel = newPlayerModel }, cmd )
 
         PlayerChosen ip ->
             let
-                newStatus =
-                    replacePlayerInStatus model ip
+                maybePlayer =
+                    findPlayerByIp model ip
+
+                newPlayerModel =
+                    Maybe.map PlayerDisplay.init maybePlayer
             in
-            ( { model | status = newStatus }, selectPlayer ip )
+            ( { model | playerModel = newPlayerModel }, selectPlayer ip )
 
         SelectedPlayer ip result ->
-            let
-                playbackState =
-                    model.status.playbackState
-
-                players =
-                    case model.playerList of
-                        Players p ->
-                            p
-
-                        _ ->
-                            []
-            in
             case result of
                 Err _ ->
-                    let
-                        newPlaybackState =
-                            { playbackState | player = Nothing }
-                    in
-                    ( model, fireInitCmds Nothing )
+                    ( { model | playerModel = Nothing }, Cmd.none )
 
+                -- If something goes wrong, do not do anything.
                 Ok _ ->
                     let
-                        player =
-                            findPlayerByIp model ip
+                        cmd =
+                            Maybe.map fireInitCmds model.playerModel |> Maybe.withDefault Cmd.none
                     in
-                    ( { model | status = replacePlayerInStatus model ip }, fireInitCmds player )
-
-        StatusBarMsg message ->
-            let
-                ( newStatusBarModel, action ) =
-                    StatusBar.update message model.status
-            in
-            ( { model | status = newStatusBarModel }, Cmd.map StatusBarMsg action )
-
-        ReceivedAlbums result ->
-            case result of
-                Err _ ->
-                    ( { model | albumList = Error }, Cmd.none )
-
-                Ok albums ->
-                    ( { model | albumList = Albums albums }, Cmd.none )
-
-        AlbumChosen player album ->
-            ( model, clearAndPlay player album )
-
-        StartedAlbum player album result ->
-            case result of
-                Err _ ->
-                    ( model, Cmd.none )
-
-                Ok _ ->
-                    ( { model | currentAlbum = Just album }, Cmd.map StatusBarMsg (StatusBar.load player) )
+                    ( model, cmd )
 
         TriggerRetrieveStatus maybePlayer time ->
             let
@@ -198,38 +155,41 @@ update msg model =
                             Cmd.none
 
                         Just player ->
-                            Cmd.map StatusBarMsg (StatusBar.loadPlaybackState player)
+                            Cmd.map PlayerMsg (PlayerDisplay.loadPlaybackState player)
             in
             ( model, cmd )
 
         TriggerUpdateClock maybePlayer time ->
-            let
-                currentStatus =
-                    model.status
+            case maybePlayer of
+                Nothing ->
+                    ( model, Cmd.none )
 
-                newSecondsSinceLastUpdated =
-                    if isPaused model then
-                        currentStatus.secondsSinceLastUpdate
-
-                    else
-                        currentStatus.secondsSinceLastUpdate + 1
-
-                newStatus =
-                    { currentStatus | secondsSinceLastUpdate = newSecondsSinceLastUpdated }
-            in
-            ( { model | status = newStatus }, Cmd.none )
+                Just player ->
+                    let
+                        newPlayerModel =
+                            Maybe.map (PlayerDisplay.triggerUpdateClock time) model.playerModel
+                    in
+                    ( { model | playerModel = newPlayerModel }, Cmd.none )
 
         UrlChanged url ->
             let
-                player =
+                maybePlayer =
                     case model.playerList of
                         Players players ->
                             playerFromUrl players url
 
                         _ ->
                             Nothing
+
+                maybePlayerModel =
+                    Maybe.map PlayerDisplay.init maybePlayer
             in
-            ( { model | player = player }, fireInitCmds player )
+            case maybePlayerModel of
+                Nothing ->
+                    ( { model | player = Nothing, playerModel = Nothing }, Cmd.none )
+
+                Just playerModel ->
+                    ( { model | player = maybePlayer, playerModel = Just playerModel }, fireInitCmds playerModel )
 
         LinkClicked urlRequest ->
             case urlRequest of
@@ -239,20 +199,17 @@ update msg model =
                 Browser.External href ->
                     ( model, Nav.load href )
 
+        PlayerMsg message ->
+            case model.playerModel of
+                Nothing ->
+                    ( model, Cmd.none )
 
-replacePlayerInStatus : Model -> String -> StatusBar.Model
-replacePlayerInStatus model ip =
-    let
-        playbackState =
-            model.status.playbackState
-
-        newPlaybackState =
-            { playbackState | player = findPlayerByIp model ip }
-
-        status =
-            model.status
-    in
-    { status | playbackState = newPlaybackState }
+                Just playerModel ->
+                    let
+                        ( newPlayerModel, action ) =
+                            PlayerDisplay.update message playerModel
+                    in
+                    ( { model | playerModel = Just newPlayerModel }, Cmd.map PlayerMsg action )
 
 
 findPlayerByIp : Model -> String -> Maybe Player
@@ -292,11 +249,6 @@ findPlayerByFn model fn =
     List.filter fn players |> List.head
 
 
-isPaused : Model -> Bool
-isPaused model =
-    model.status.playbackState.state == Paused
-
-
 
 -- VIEW
 
@@ -313,14 +265,14 @@ renderPage : Model -> Html Msg
 renderPage model =
     let
         playerDisplay =
-            case model.player of
+            case model.playerModel of
                 Nothing ->
                     [ div [] [ text "First select a player" ]
                     ]
 
-                Just player ->
-                    [ renderAlbumList player model.albumList
-                    , renderStatusBar player model.status
+                Just playerModel ->
+                    [ HS.map PlayerMsg
+                        (PlayerDisplay.view playerModel)
                     ]
     in
     div [ Styles.body ]
@@ -378,44 +330,6 @@ renderPlayerOption maybeCurrentPlayer player =
         ]
 
 
-renderAlbumList : Player -> AlbumListModel -> Html Msg
-renderAlbumList player albumListModel =
-    case albumListModel of
-        Loading ->
-            div [] [ text "Loading" ]
-
-        Albums albums ->
-            renderAlbumGrid player albums
-
-        Error ->
-            div [] [ text "Error" ]
-
-
-renderAlbumGrid : Player -> List Album -> Html Msg
-renderAlbumGrid player albums =
-    div [ Styles.albumGrid ] (List.map (renderAlbum player) (List.take 30 albums))
-
-
-renderAlbum : Player -> Album -> Html Msg
-renderAlbum player album =
-    -- This is a workaround for the current forwarding situation in Elm dev mode
-    let
-        fullPath =
-            concat [ "/api", album.coverPath ]
-    in
-    li [ Styles.album, Styles.coverImage fullPath, onDoubleClick (AlbumChosen player album) ]
-        [ div [ Styles.description ]
-            [ div [ Styles.title ] [ text album.title ]
-            , div [ Styles.artist ] [ text album.artist ]
-            ]
-        ]
-
-
-renderStatusBar : Player -> StatusBar.Model -> Html Msg
-renderStatusBar player status =
-    HS.map StatusBarMsg (StatusBar.view player status)
-
-
 loadPlayers : Cmd Msg
 loadPlayers =
     Http.get
@@ -438,14 +352,6 @@ selectPlayer ip =
         }
 
 
-loadAlbums : Player -> Cmd Msg
-loadAlbums player =
-    Http.get
-        { url = buildPlayerUrl "albums" player
-        , expect = Http.expectJson ReceivedAlbums albumDecoder
-        }
-
-
 buildPlayerUrl : String -> Player -> String
 buildPlayerUrl string player =
     let
@@ -453,36 +359,6 @@ buildPlayerUrl string player =
             "/" ++ String.toLower player.name
     in
     String.concat [ "/api/", playerPart, "/", string ]
-
-
-loadStatus : Player -> Cmd Msg
-loadStatus player =
-    Cmd.map StatusBarMsg (StatusBar.load player)
-
-
-clearAndPlay : Player -> Album -> Cmd Msg
-clearAndPlay player album =
-    Http.post
-        { url = buildPlayerUrl "clear_and_play" player
-        , body =
-            Http.jsonBody
-                (JE.object
-                    [ ( "album", JE.string album.title )
-                    , ( "album_artist", JE.string album.artist )
-                    ]
-                )
-        , expect = Http.expectWhatever (StartedAlbum player album)
-        }
-
-
-albumDecoder : JD.Decoder (List Album)
-albumDecoder =
-    JD.list
-        (JD.map3 Album
-            (JD.field "album_artist" JD.string)
-            (JD.field "album" JD.string)
-            (JD.field "cover_path" JD.string)
-        )
 
 
 playerListDecoder : JD.Decoder (List Player)
