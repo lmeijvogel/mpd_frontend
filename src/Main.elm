@@ -44,7 +44,6 @@ type alias Model =
     { url : Url.Url
     , key : Nav.Key
     , playerList : PlayersListModel
-    , player : Maybe Player
     , playerModel : Maybe PlayerDisplay.Model
     }
 
@@ -73,7 +72,6 @@ init flags url key =
     ( { url = url
       , key = key
       , playerList = PlayersLoading
-      , player = Nothing
       , playerModel = Nothing
       }
       -- Players are only loaded once to fix strange results
@@ -122,7 +120,7 @@ update msg model =
                         cmd =
                             Maybe.map fireInitCmds newPlayerModel |> Maybe.withDefault Cmd.none
                     in
-                    ( { model | playerList = Players players, player = maybePlayer, playerModel = newPlayerModel }, cmd )
+                    ( { model | playerList = Players players, playerModel = newPlayerModel }, cmd )
 
         PlayerChosen ip ->
             let
@@ -186,10 +184,10 @@ update msg model =
             in
             case maybePlayerModel of
                 Nothing ->
-                    ( { model | player = Nothing, playerModel = Nothing }, Cmd.none )
+                    ( { model | playerModel = Nothing }, Cmd.none )
 
                 Just playerModel ->
-                    ( { model | player = maybePlayer, playerModel = Just playerModel }, fireInitCmds playerModel )
+                    ( { model | playerModel = Just playerModel }, fireInitCmds playerModel )
 
         LinkClicked urlRequest ->
             case urlRequest of
@@ -293,13 +291,9 @@ renderPlayerSelector model =
             span [] [ text "Error loading players ..." ]
 
         Players players ->
-            let
-                maybeCurrentPlayer =
-                    model.player
-            in
             ul [ Styles.playerSelector ]
                 (List.map
-                    (renderPlayerOption maybeCurrentPlayer)
+                    (renderPlayerOption (getCurrentPlayer model))
                     players
                 )
 
@@ -372,9 +366,18 @@ playerListDecoder =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
+    let
+        player =
+            case model.playerModel of
+                Nothing ->
+                    Nothing
+
+                Just playerModel ->
+                    Just playerModel.player
+    in
     Sub.batch
-        [ Time.every 5000 (TriggerRetrieveStatus model.player)
-        , Time.every 1000 (TriggerUpdateClock model.player)
+        [ Time.every 5000 (TriggerRetrieveStatus player)
+        , Time.every 1000 (TriggerUpdateClock player)
         ]
 
 
@@ -385,3 +388,13 @@ playerFromUrl playerList url =
             url.fragment |> Maybe.withDefault ""
     in
     List.filter (\el -> fragment == el.name) playerList |> List.head
+
+
+getCurrentPlayer : Model -> Maybe Player
+getCurrentPlayer model =
+    case model.playerModel of
+        Nothing ->
+            Nothing
+
+        Just playerModel ->
+            Just playerModel.player
