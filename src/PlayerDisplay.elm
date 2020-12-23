@@ -1,4 +1,4 @@
-module PlayerDisplay exposing (Model, Msg, getAll, init, loadPlaybackState, triggerUpdateClock, update, view)
+module PlayerDisplay exposing (Model, Msg, init, loadAlbumsAndStatus, loadPlaybackState, triggerUpdateClock, update, view)
 
 import Html.Styled as HS exposing (..)
 import Html.Styled.Attributes exposing (disabled, href, selected, src, value)
@@ -81,8 +81,8 @@ update msg model =
                     ( { model | currentAlbum = Just album }, Cmd.map StatusBarMsg (StatusBar.load player) )
 
 
-getAll : Model -> Cmd Msg
-getAll model =
+loadAlbumsAndStatus : Model -> Cmd Msg
+loadAlbumsAndStatus model =
     Cmd.batch [ loadAlbums model.player, loadStatus model.player ]
 
 

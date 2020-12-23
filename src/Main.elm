@@ -81,9 +81,9 @@ init flags url key =
     )
 
 
-fireInitCmds : PlayerDisplay.Model -> Cmd Msg
-fireInitCmds playerModel =
-    Cmd.map PlayerMsg (PlayerDisplay.getAll playerModel)
+loadPlayerStatus : PlayerDisplay.Model -> Cmd Msg
+loadPlayerStatus playerModel =
+    Cmd.map PlayerMsg (PlayerDisplay.loadAlbumsAndStatus playerModel)
 
 
 
@@ -118,7 +118,7 @@ update msg model =
                             Maybe.map PlayerDisplay.init maybePlayer
 
                         cmd =
-                            Maybe.map fireInitCmds newPlayerModel |> Maybe.withDefault Cmd.none
+                            Maybe.map loadPlayerStatus newPlayerModel |> Maybe.withDefault Cmd.none
                     in
                     ( { model | playerList = Players players, playerModel = newPlayerModel }, cmd )
 
@@ -141,7 +141,7 @@ update msg model =
                 Ok _ ->
                     let
                         cmd =
-                            Maybe.map fireInitCmds model.playerModel |> Maybe.withDefault Cmd.none
+                            Maybe.map loadPlayerStatus model.playerModel |> Maybe.withDefault Cmd.none
                     in
                     ( model, cmd )
 
@@ -187,7 +187,7 @@ update msg model =
                     ( { model | playerModel = Nothing }, Cmd.none )
 
                 Just playerModel ->
-                    ( { model | playerModel = Just playerModel }, fireInitCmds playerModel )
+                    ( { model | playerModel = Just playerModel }, loadPlayerStatus playerModel )
 
         LinkClicked urlRequest ->
             case urlRequest of
@@ -291,9 +291,18 @@ renderPlayerSelector model =
             span [] [ text "Error loading players ..." ]
 
         Players players ->
+            let
+                maybeCurrentPlayer =
+                    case model.playerModel of
+                        Nothing ->
+                            Nothing
+
+                        Just playerModel ->
+                            Just playerModel.player
+            in
             ul [ Styles.playerSelector ]
                 (List.map
-                    (renderPlayerOption (getCurrentPlayer model))
+                    (renderPlayerOption maybeCurrentPlayer)
                     players
                 )
 
@@ -388,13 +397,3 @@ playerFromUrl playerList url =
             url.fragment |> Maybe.withDefault ""
     in
     List.filter (\el -> fragment == el.name) playerList |> List.head
-
-
-getCurrentPlayer : Model -> Maybe Player
-getCurrentPlayer model =
-    case model.playerModel of
-        Nothing ->
-            Nothing
-
-        Just playerModel ->
-            Just playerModel.player
