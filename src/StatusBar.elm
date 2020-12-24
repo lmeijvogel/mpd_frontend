@@ -9,6 +9,7 @@ import Http exposing (jsonBody)
 import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
+import Player exposing (Player)
 import StatusBarStyles
 import String exposing (toLower)
 import Time
@@ -75,12 +76,6 @@ type alias Output =
     { id : Int
     , name : String
     , isEnabled : Bool
-    }
-
-
-type alias Player =
-    { ip : String
-    , name : String
     }
 
 

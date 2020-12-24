@@ -12,6 +12,7 @@ import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list
 import Json.Decode.Extra
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
+import Player exposing (Player)
 import PlayerDisplay exposing (..)
 import StatusBar exposing (..)
 import String exposing (concat)
