@@ -262,8 +262,25 @@ view model =
 renderPage : Model -> Html Msg
 renderPage model =
     let
+        content =
+            case model.playerList of
+                PlayersLoading ->
+                    div [] [ text "Loading players" ]
+
+                PlayersError ->
+                    div [] [ text "Error loading players" ]
+
+                Players players ->
+                    renderPlayersListAndPlayerDisplay players model.playerModel
+    in
+    div [ Styles.body ] [ content ]
+
+
+renderPlayersListAndPlayerDisplay : List Player -> Maybe PlayerDisplay.Model -> Html Msg
+renderPlayersListAndPlayerDisplay playerList maybePlayerModel =
+    let
         playerDisplay =
-            case model.playerModel of
+            case maybePlayerModel of
                 Nothing ->
                     [ div [] [ text "First select a player" ]
                     ]
@@ -275,36 +292,28 @@ renderPage model =
     in
     div [ Styles.body ]
         ([ HS.fromUnstyled FontAwesome.Styles.css
-         , renderPlayerSelector model
+         , renderPlayerSelector playerList maybePlayerModel
          ]
             ++ playerDisplay
         )
 
 
-renderPlayerSelector : Model -> Html Msg
-renderPlayerSelector model =
-    case model.playerList of
-        PlayersLoading ->
-            span [] [ text "Loading ..." ]
+renderPlayerSelector : List Player -> Maybe PlayerDisplay.Model -> Html Msg
+renderPlayerSelector playerList maybePlayerModel =
+    let
+        maybeCurrentPlayer =
+            case maybePlayerModel of
+                Nothing ->
+                    Nothing
 
-        PlayersError ->
-            span [] [ text "Error loading players ..." ]
-
-        Players players ->
-            let
-                maybeCurrentPlayer =
-                    case model.playerModel of
-                        Nothing ->
-                            Nothing
-
-                        Just playerModel ->
-                            Just playerModel.player
-            in
-            ul [ Styles.playerSelector ]
-                (List.map
-                    (renderPlayerOption maybeCurrentPlayer)
-                    players
-                )
+                Just playerModel ->
+                    Just playerModel.player
+    in
+    ul [ Styles.playerSelector ]
+        (List.map
+            (renderPlayerOption maybeCurrentPlayer)
+            playerList
+        )
 
 
 renderPlayerOption : Maybe Player -> Player -> Html Msg
