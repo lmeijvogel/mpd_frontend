@@ -44,7 +44,6 @@ type alias PlaybackState =
     , state : PlayerState
     , volume : Maybe Int
     , outputs : List Output
-    , player : Maybe Player
     , songId : Maybe Int
     , elapsed : Maybe Float
     , duration : Maybe Float
@@ -97,7 +96,6 @@ initPlaybackState =
     , state = Stopped
     , volume = Nothing
     , outputs = []
-    , player = Nothing
     , songId = Nothing
     , elapsed = Nothing
     , duration = Nothing
@@ -130,18 +128,9 @@ decodePlaybackState =
         |> required "state" decodeState
         |> optional "volume" (JD.maybe int) Nothing
         |> required "outputs" (list decodeOutput)
-        |> required "player" decodePlayer
         |> optional "songid" (JD.maybe int) Nothing
         |> optional "elapsed" (JD.maybe float) Nothing
         |> optional "duration" (JD.maybe float) Nothing
-
-
-decodePlayer : Decoder (Maybe Player)
-decodePlayer =
-    JD.maybe <|
-        JD.map2 Player
-            (JD.field "ip" string)
-            (JD.field "name" string)
 
 
 decodeOutput : Decoder Output
