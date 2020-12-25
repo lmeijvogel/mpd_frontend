@@ -113,7 +113,7 @@ update msg model =
                 Ok players ->
                     let
                         maybePlayer =
-                            playerFromUrl players model.url
+                            Player.fromUrl players model.url
 
                         newPlayerModel =
                             Maybe.map PlayerDisplay.init maybePlayer
@@ -126,7 +126,7 @@ update msg model =
         PlayerChosen ip ->
             let
                 maybePlayer =
-                    findPlayerByIp model ip
+                    Player.findByIp (playersToList model.playerList) ip
 
                 newPlayerModel =
                     Maybe.map PlayerDisplay.init maybePlayer
@@ -173,12 +173,7 @@ update msg model =
         UrlChanged url ->
             let
                 maybePlayer =
-                    case model.playerList of
-                        Players players ->
-                            playerFromUrl players url
-
-                        _ ->
-                            Nothing
+                    Player.fromUrl (playersToList model.playerList) url
 
                 maybePlayerModel =
                     Maybe.map PlayerDisplay.init maybePlayer
@@ -209,43 +204,6 @@ update msg model =
                             PlayerDisplay.update message playerModel
                     in
                     ( { model | playerModel = Just newPlayerModel }, Cmd.map PlayerMsg action )
-
-
-findPlayerByIp : Model -> String -> Maybe Player
-findPlayerByIp model ip =
-    let
-        players =
-            case model.playerList of
-                Players p ->
-                    p
-
-                _ ->
-                    []
-    in
-    List.filter (\p -> p.ip == ip) players |> List.head
-
-
-findPlayerByNameCaseInsensitive : Model -> String -> Maybe Player
-findPlayerByNameCaseInsensitive model name =
-    let
-        lowerQuery =
-            String.toLower name
-    in
-    findPlayerByFn model (\p -> String.toLower (Debug.log "Name" p.name) == lowerQuery)
-
-
-findPlayerByFn : Model -> (Player -> Bool) -> Maybe Player
-findPlayerByFn model fn =
-    let
-        players =
-            case model.playerList of
-                Players p ->
-                    p
-
-                _ ->
-                    []
-    in
-    List.filter fn players |> List.head
 
 
 
@@ -400,10 +358,11 @@ subscriptions model =
         ]
 
 
-playerFromUrl : List Player -> Url.Url -> Maybe Player
-playerFromUrl playerList url =
-    let
-        fragment =
-            url.fragment |> Maybe.withDefault ""
-    in
-    List.filter (\el -> fragment == el.name) playerList |> List.head
+playersToList : PlayersListModel -> List Player
+playersToList players =
+    case players of
+        Players p ->
+            p
+
+        _ ->
+            []
