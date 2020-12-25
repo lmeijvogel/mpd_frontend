@@ -116,7 +116,7 @@ loadStatus player =
 
 loadPlaybackState : Player -> Cmd Msg
 loadPlaybackState player =
-    Cmd.map StatusBarMsg (StatusBar.loadPlaybackState player)
+    Cmd.map StatusBarMsg (StatusBar.load player)
 
 
 clearAndPlay : Player -> Album -> Cmd Msg
