@@ -171,6 +171,8 @@ type Msg
     | ClickedPlayerCommand Player PlayerCommand
     | PlaylistEntryClicked Player PlaylistEntry
     | SentPlayerCommand Player (Result Http.Error ())
+    | OutputClicked Player Output
+    | OutputActivated Player Output (Result Http.Error ())
     | ShowHideIconClicked Bool
 
 
@@ -213,6 +215,17 @@ update message model =
         SentPlayerCommand player command ->
             ( model, loadPlaybackState player )
 
+        OutputClicked player output ->
+            ( model, activateOutput player output )
+
+        OutputActivated player output result ->
+            case result of
+                Err _ ->
+                    ( model, Cmd.none )
+
+                Ok _ ->
+                    ( model, loadPlaybackState player )
+
         ShowHideIconClicked newState ->
             ( { model | showPanel = newState }, Cmd.none )
 
@@ -231,6 +244,7 @@ view player model =
                 (List.map (renderCheckbox player model)
                     [ Repeat, Single, Random, Consume ]
                 )
+            , renderOutputs player model.playbackState
             ]
         ]
 
@@ -375,7 +389,10 @@ renderPlaylistEntry currentSongId player entry =
             else
                 [ clickHandler ]
     in
-    li elementClass [ text entry.title ]
+    li elementClass
+        [ div [ StatusBarStyles.playlistTitle ] [ text entry.title ]
+        , div [ StatusBarStyles.playlistArtist ] [ text entry.artist ]
+        ]
 
 
 renderCheckbox : Player -> Model -> PlaybackSetting -> Html Msg
@@ -398,6 +415,42 @@ renderCheckbox player model setting =
             [ onClick (ChangedPlaybackSetting player setting (not isActive)) ]
     in
     span (class ++ clickHandler) [ HS.fromUnstyled (Icon.viewIcon (getIconForSetting setting)) ]
+
+
+renderOutputs : Player -> PlaybackState -> Html Msg
+renderOutputs player playbackState =
+    ul [] (List.map (renderOutput player) playbackState.outputs)
+
+
+renderOutput : Player -> Output -> Html Msg
+renderOutput player output =
+    let
+        style =
+            case output.isEnabled of
+                True ->
+                    StatusBarStyles.activeOutput
+
+                False ->
+                    StatusBarStyles.inactiveOutput
+    in
+    li [ StatusBarStyles.outputRow ]
+        [ button [ onClick (OutputClicked player output), StatusBarStyles.output, style ]
+            [ text output.name ]
+        ]
+
+
+activateOutput : Player -> Output -> Cmd Msg
+activateOutput player output =
+    Http.post
+        { url = buildPlayerUrl "enable_output" player
+        , body =
+            Http.jsonBody
+                (JE.object
+                    [ ( "id", JE.int output.id )
+                    ]
+                )
+        , expect = Http.expectWhatever (OutputActivated player output)
+        }
 
 
 getIconForSetting : PlaybackSetting -> Icon.Icon

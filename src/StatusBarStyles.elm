@@ -5,6 +5,11 @@ import Html.Styled exposing (Attribute)
 import Html.Styled.Attributes exposing (css)
 
 
+panelBackgroundColor : Color
+panelBackgroundColor =
+    rgb 64 64 64
+
+
 panel : Attribute msg
 panel =
     css
@@ -12,7 +17,7 @@ panel =
         , bottom (px 0)
         , minHeight (px 45)
         , width (pct 100)
-        , backgroundColor (rgb 64 64 64)
+        , backgroundColor panelBackgroundColor
         , color (rgb 200 200 200)
         , property "user-select" "none"
         ]
@@ -53,6 +58,20 @@ playlist =
         ]
 
 
+playlistTitle : Attribute msg
+playlistTitle =
+    css
+        [ color (rgb 255 255 255)
+        ]
+
+
+playlistArtist : Attribute msg
+playlistArtist =
+    css
+        [ color (rgb 160 160 160)
+        ]
+
+
 selected : Attribute msg
 selected =
     css
@@ -72,6 +91,36 @@ controlButton =
 
 activeButton : Attribute msg
 activeButton =
+    css
+        [ color (rgb 255 255 255)
+        ]
+
+
+outputRow =
+    css
+        [ listStyle none
+        , textAlign left
+        ]
+
+
+output : Attribute msg
+output =
+    css
+        [ textAlign left
+        , border (px 0)
+        , backgroundColor panelBackgroundColor
+        ]
+
+
+inactiveOutput : Attribute msg
+inactiveOutput =
+    css
+        [ color (rgb 128 128 128)
+        ]
+
+
+activeOutput : Attribute msg
+activeOutput =
     css
         [ color (rgb 255 255 255)
         ]
