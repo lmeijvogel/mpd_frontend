@@ -55,19 +55,6 @@ type PlayersListModel
     | Players (List Player)
 
 
-type AlbumListModel
-    = Loading
-    | Error
-    | Albums (List Album)
-
-
-type alias Album =
-    { artist : String
-    , title : String
-    , coverPath : String
-    }
-
-
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     ( { url = url
