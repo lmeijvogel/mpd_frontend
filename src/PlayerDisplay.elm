@@ -9,10 +9,10 @@ import Json.Decode.Extra
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
 import Player exposing (Player)
+import PlayerDisplayStyles
 import Responsive
 import StatusBar exposing (..)
 import String exposing (concat)
-import Styles
 import Time
 
 
@@ -157,7 +157,7 @@ view : Model -> Responsive.ClientType -> Html Msg
 view model clientType =
     div []
         [ renderAlbums model clientType
-        , renderStatusBar model.player model.status
+        , renderStatusBar model.player model.status clientType
         ]
 
 
@@ -184,7 +184,7 @@ renderAlbums model clientType =
 
 renderAlbumGrid : Player -> List Album -> Html Msg
 renderAlbumGrid player albums =
-    div [ Styles.albumGrid ] (List.map (renderAlbumTile player) (List.take 30 albums))
+    div [ PlayerDisplayStyles.albumGrid ] (List.map (renderAlbumTile player) (List.take 30 albums))
 
 
 renderAlbumTile : Player -> Album -> Html Msg
@@ -194,17 +194,17 @@ renderAlbumTile player album =
         fullPath =
             concat [ "/api", album.coverPath ]
     in
-    li [ Styles.albumTile, Styles.coverImage fullPath, onDoubleClick (AlbumChosen player album) ]
-        [ div [ Styles.description ]
-            [ div [ Styles.title ] [ text album.title ]
-            , div [ Styles.artist ] [ text album.artist ]
+    li [ PlayerDisplayStyles.albumTile, PlayerDisplayStyles.coverImage fullPath, onDoubleClick (AlbumChosen player album) ]
+        [ div [ PlayerDisplayStyles.description ]
+            [ div [ PlayerDisplayStyles.title ] [ text album.title ]
+            , div [ PlayerDisplayStyles.artist ] [ text album.artist ]
             ]
         ]
 
 
 renderAlbumList : Player -> List Album -> Html Msg
 renderAlbumList player albums =
-    ul [ Styles.albumList ] (List.map (renderAlbumLine player) (List.take 30 albums))
+    ul [ PlayerDisplayStyles.albumList ] (List.map (renderAlbumLine player) (List.take 30 albums))
 
 
 renderAlbumLine : Player -> Album -> Html Msg
@@ -217,15 +217,17 @@ renderAlbumLine player album =
         albumText =
             String.concat [ album.artist, " - ", album.title ]
     in
-    li [ Styles.albumListItem, onDoubleClick (AlbumChosen player album) ]
-        [ span [ Styles.albumLineCoverImage fullPath ] []
-        , span [ Styles.albumDescription ]
-            [ div [ Styles.albumLineTitle ] [ text album.title ]
-            , div [ Styles.albumLineArtist ] [ text album.artist ]
+    -- AlbumLines are only rendered on mobile, so it must respond to onClick instead of
+    -- onDoubleClick
+    li [ PlayerDisplayStyles.albumListItem, onClick (AlbumChosen player album) ]
+        [ span [ PlayerDisplayStyles.albumLineCoverImage fullPath ] []
+        , span [ PlayerDisplayStyles.albumDescription ]
+            [ div [ PlayerDisplayStyles.albumLineTitle ] [ text album.title ]
+            , div [ PlayerDisplayStyles.albumLineArtist ] [ text album.artist ]
             ]
         ]
 
 
-renderStatusBar : Player -> StatusBar.Model -> Html Msg
-renderStatusBar player status =
-    HS.map StatusBarMsg (StatusBar.view player status)
+renderStatusBar : Player -> StatusBar.Model -> Responsive.ClientType -> Html Msg
+renderStatusBar player status clientType =
+    HS.map StatusBarMsg (StatusBar.view player status clientType)

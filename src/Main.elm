@@ -8,7 +8,6 @@ import Dict exposing (Dict)
 import FontAwesome.Styles
 import Html.Styled as HS exposing (..)
 import Html.Styled.Attributes exposing (disabled, href, selected, src, value)
-import Html.Styled.Events exposing (onClick, onDoubleClick, onInput)
 import Http exposing (jsonBody)
 import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list, nullable, string)
 import Json.Decode.Extra
