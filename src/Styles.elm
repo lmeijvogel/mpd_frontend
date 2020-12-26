@@ -66,8 +66,8 @@ albumGrid =
         ]
 
 
-album : Attribute msg
-album =
+albumTile : Attribute msg
+albumTile =
     css
         [ displayFlex
         , flexDirection column
@@ -77,6 +77,67 @@ album =
         , height (px 200)
         , fontSize (pt 14)
         , cursor pointer
+        ]
+
+
+albumList : Attribute msg
+albumList =
+    css
+        [ displayFlex
+        , flexDirection column
+        , width (pct 100)
+        , textAlign left
+        , fontSize (vw 4)
+        , listStyle none
+        , backgroundColor (rgb 0 0 0)
+        , color (rgb 255 255 255)
+        , displayFlex
+        , flexWrap wrap
+        ]
+
+
+albumListItem : Attribute msg
+albumListItem =
+    css
+        [ displayFlex
+        , flexDirection row
+        , alignItems center
+        , margin2 (px 5) (px 0)
+        , cursor pointer
+        , property "user-select" "none"
+        ]
+
+
+albumDescription : Attribute msg
+albumDescription =
+    css
+        [ displayFlex
+        , flexDirection column
+        ]
+
+
+albumLineTitle : Attribute msg
+albumLineTitle =
+    css [ color (rgb 255 255 255) ]
+
+
+albumLineArtist : Attribute msg
+albumLineArtist =
+    css [ color (rgb 160 160 160) ]
+
+
+albumLineCoverImage : String -> Attribute msg
+albumLineCoverImage coverPath =
+    let
+        imageComponent =
+            String.concat [ "url(", coverPath, ")" ]
+    in
+    css
+        [ width (vw 20)
+        , height (vw 20)
+        , margin2 (px 0) (px 20)
+        , property "background-image" imageComponent
+        , backgroundSize cover
         ]
 
 

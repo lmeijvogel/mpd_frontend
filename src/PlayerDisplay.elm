@@ -9,6 +9,7 @@ import Json.Decode.Extra
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
 import Player exposing (Player)
+import Responsive
 import StatusBar exposing (..)
 import String exposing (concat)
 import Styles
@@ -152,22 +153,30 @@ albumDecoder =
         )
 
 
-view : Model -> Html Msg
-view model =
+view : Model -> Responsive.ClientType -> Html Msg
+view model clientType =
     div []
-        [ renderAlbumList model
+        [ renderAlbums model clientType
         , renderStatusBar model.player model.status
         ]
 
 
-renderAlbumList : Model -> Html Msg
-renderAlbumList model =
+renderAlbums : Model -> Responsive.ClientType -> Html Msg
+renderAlbums model clientType =
     case model.albumList of
         Loading ->
             div [] [ text "Loading" ]
 
         Albums albums ->
-            renderAlbumGrid model.player albums
+            case clientType of
+                Responsive.Desktop ->
+                    renderAlbumGrid model.player albums
+
+                Responsive.Mobile ->
+                    renderAlbumList model.player albums
+
+                Responsive.Unknown ->
+                    div [] []
 
         Error ->
             div [] [ text "Error" ]
@@ -175,20 +184,44 @@ renderAlbumList model =
 
 renderAlbumGrid : Player -> List Album -> Html Msg
 renderAlbumGrid player albums =
-    div [ Styles.albumGrid ] (List.map (renderAlbum player) (List.take 30 albums))
+    div [ Styles.albumGrid ] (List.map (renderAlbumTile player) (List.take 30 albums))
 
 
-renderAlbum : Player -> Album -> Html Msg
-renderAlbum player album =
+renderAlbumTile : Player -> Album -> Html Msg
+renderAlbumTile player album =
     -- This is a workaround for the current forwarding situation in Elm dev mode
     let
         fullPath =
             concat [ "/api", album.coverPath ]
     in
-    li [ Styles.album, Styles.coverImage fullPath, onDoubleClick (AlbumChosen player album) ]
+    li [ Styles.albumTile, Styles.coverImage fullPath, onDoubleClick (AlbumChosen player album) ]
         [ div [ Styles.description ]
             [ div [ Styles.title ] [ text album.title ]
             , div [ Styles.artist ] [ text album.artist ]
+            ]
+        ]
+
+
+renderAlbumList : Player -> List Album -> Html Msg
+renderAlbumList player albums =
+    ul [ Styles.albumList ] (List.map (renderAlbumLine player) (List.take 30 albums))
+
+
+renderAlbumLine : Player -> Album -> Html Msg
+renderAlbumLine player album =
+    -- This is a workaround for the current forwarding situation in Elm dev mode
+    let
+        fullPath =
+            concat [ "/api", album.coverPath ]
+
+        albumText =
+            String.concat [ album.artist, " - ", album.title ]
+    in
+    li [ Styles.albumListItem, onDoubleClick (AlbumChosen player album) ]
+        [ span [ Styles.albumLineCoverImage fullPath ] []
+        , span [ Styles.albumDescription ]
+            [ div [ Styles.albumLineTitle ] [ text album.title ]
+            , div [ Styles.albumLineArtist ] [ text album.artist ]
             ]
         ]
 

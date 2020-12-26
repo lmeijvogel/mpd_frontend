@@ -1,6 +1,8 @@
 module Main exposing (..)
 
 import Browser
+import Browser.Dom
+import Browser.Events
 import Browser.Navigation as Nav
 import Dict exposing (Dict)
 import FontAwesome.Styles
@@ -14,9 +16,11 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
 import Player exposing (Player)
 import PlayerDisplay exposing (..)
+import Responsive
 import StatusBar exposing (..)
 import String exposing (concat)
 import Styles
+import Task
 import Time
 import Url
 
@@ -44,6 +48,8 @@ main =
 type alias Model =
     { url : Url.Url
     , key : Nav.Key
+    , window : Responsive.Dimensions
+    , clientType : Responsive.ClientType
     , playerList : PlayersListModel
     , playerModel : Maybe PlayerDisplay.Model
     }
@@ -59,13 +65,15 @@ init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     ( { url = url
       , key = key
+      , window = { width = 0, height = 0 }
+      , clientType = Responsive.Unknown
       , playerList = PlayersLoading
       , playerModel = Nothing
       }
       -- Players are only loaded once to fix strange results
       -- when the player selector dropdown changed by removing
       -- the 'no player selected' option.
-    , loadPlayers
+    , Cmd.batch [ loadPlayers, retrieveWindowSize ]
     )
 
 
@@ -87,6 +95,8 @@ type Msg
     | UrlChanged Url.Url
     | LinkClicked Browser.UrlRequest
     | PlayerMsg PlayerDisplay.Msg
+    | GotViewport Browser.Dom.Viewport
+    | WindowResized Int Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -192,6 +202,26 @@ update msg model =
                     in
                     ( { model | playerModel = Just newPlayerModel }, Cmd.map PlayerMsg action )
 
+        GotViewport viewport ->
+            let
+                dimensions =
+                    { width = viewport.viewport.width |> floor, height = viewport.viewport.height |> floor }
+
+                clientType =
+                    Responsive.determineClientType dimensions
+            in
+            ( { model | window = dimensions, clientType = clientType }, Cmd.none )
+
+        WindowResized width height ->
+            let
+                dimensions =
+                    { width = width, height = height }
+
+                clientType =
+                    Responsive.determineClientType dimensions
+            in
+            ( { model | window = dimensions, clientType = clientType }, Cmd.none )
+
 
 
 -- VIEW
@@ -217,13 +247,17 @@ renderPage model =
                     div [] [ text "Error loading players" ]
 
                 Players players ->
-                    renderPlayersListAndPlayerDisplay players model.playerModel
+                    renderPlayersListAndPlayerDisplay players model.playerModel (Debug.log "clientType" model.clientType)
+
+        dimensions =
+            text
+                (String.fromInt model.window.width)
     in
-    div [ Styles.body ] [ content ]
+    div [ Styles.body ] [ dimensions, content ]
 
 
-renderPlayersListAndPlayerDisplay : List Player -> Maybe PlayerDisplay.Model -> Html Msg
-renderPlayersListAndPlayerDisplay playerList maybePlayerModel =
+renderPlayersListAndPlayerDisplay : List Player -> Maybe PlayerDisplay.Model -> Responsive.ClientType -> Html Msg
+renderPlayersListAndPlayerDisplay playerList maybePlayerModel clientType =
     let
         playerDisplay =
             case maybePlayerModel of
@@ -233,10 +267,10 @@ renderPlayersListAndPlayerDisplay playerList maybePlayerModel =
 
                 Just playerModel ->
                     [ HS.map PlayerMsg
-                        (PlayerDisplay.view playerModel)
+                        (PlayerDisplay.view playerModel clientType)
                     ]
     in
-    div [ Styles.body ]
+    div []
         ([ HS.fromUnstyled FontAwesome.Styles.css
          , renderPlayerSelector playerList maybePlayerModel
          ]
@@ -328,6 +362,11 @@ playerListDecoder =
         )
 
 
+retrieveWindowSize : Cmd Msg
+retrieveWindowSize =
+    Task.perform GotViewport Browser.Dom.getViewport
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     let
@@ -342,6 +381,7 @@ subscriptions model =
     Sub.batch
         [ Time.every 5000 (TriggerRetrieveStatus player)
         , Time.every 1000 (TriggerUpdateClock player)
+        , Browser.Events.onResize WindowResized
         ]
 
 
