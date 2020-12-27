@@ -213,9 +213,6 @@ renderAlbumLine player album =
     let
         fullPath =
             concat [ "/api", album.coverPath ]
-
-        albumText =
-            String.concat [ album.artist, " - ", album.title ]
     in
     -- AlbumLines are only rendered on mobile, so it must respond to onClick instead of
     -- onDoubleClick
