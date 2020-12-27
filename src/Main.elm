@@ -247,12 +247,8 @@ renderPage model =
 
                 Players players ->
                     renderPlayersListAndPlayerDisplay players model.playerModel (Debug.log "clientType" model.clientType)
-
-        dimensions =
-            text
-                (String.fromInt model.window.width)
     in
-    div [ Styles.body ] [ dimensions, content ]
+    div [ Styles.body ] [ content ]
 
 
 renderPlayersListAndPlayerDisplay : List Player -> Maybe PlayerDisplay.Model -> Responsive.ClientType -> Html Msg
