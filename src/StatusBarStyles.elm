@@ -39,6 +39,13 @@ topBar : Attribute msg
 topBar =
     css
         [ displayFlex
+        , position fixed
+        , bottom (px 0)
+        , minHeight (px 45)
+        , width (pct 100)
+        , backgroundColor panelBackgroundColor
+        , color (rgb 200 200 200)
+        , property "user-select" "none"
         , justifyContent spaceBetween
         , alignItems center
         , flexDirection row

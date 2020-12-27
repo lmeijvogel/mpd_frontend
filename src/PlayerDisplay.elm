@@ -21,7 +21,13 @@ type alias Model =
     , albumList : AlbumListModel
     , currentAlbum : Maybe Album
     , status : StatusBar.Model
+    , visiblePage : VisiblePage
     }
+
+
+type VisiblePage
+    = AlbumsPage
+    | StatusPage
 
 
 type AlbumListModel
@@ -50,6 +56,7 @@ init player =
     , albumList = Loading
     , currentAlbum = Nothing
     , status = StatusBar.init
+    , visiblePage = AlbumsPage
     }
 
 
@@ -155,10 +162,19 @@ albumDecoder =
 
 view : Model -> Responsive.ClientType -> Html Msg
 view model clientType =
-    div []
-        [ renderAlbums model clientType
-        , renderStatusBar model.player model.status clientType
-        ]
+    let
+        mainPage =
+            case model.visiblePage of
+                AlbumsPage ->
+                    renderAlbums model clientType
+
+                StatusPage ->
+                    renderStatusBar model.player model.status clientType
+
+        bottomBar =
+            HS.map StatusBarMsg (StatusBar.renderStatusSummary model.player model.status clientType)
+    in
+    div [] [ mainPage, bottomBar ]
 
 
 renderAlbums : Model -> Responsive.ClientType -> Html Msg

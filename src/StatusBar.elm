@@ -10,6 +10,7 @@ import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
 import Player exposing (Player)
+import Responsive
 import StatusBarStyles
 import String exposing (toLower)
 import Time
@@ -234,10 +235,10 @@ update message model =
 -- VIEW
 
 
-view : Player -> Model -> Html Msg
-view player model =
+view : Player -> Model -> Responsive.ClientType -> Html Msg
+view player model clientType =
     div [ StatusBarStyles.panel ]
-        [ renderTopBar player model
+        [ renderStatusSummary player model clientType
         , div [ StatusBarStyles.mainContents model.showPanel ]
             [ renderPlaylist player model
             , div []
@@ -249,10 +250,22 @@ view player model =
         ]
 
 
-renderTopBar : Player -> Model -> Html Msg
-renderTopBar player model =
+renderStatusSummary : Player -> Model -> Responsive.ClientType -> Html Msg
+renderStatusSummary player model clientType =
+    let
+        playerButtons =
+            case clientType of
+                Responsive.Desktop ->
+                    renderPlayerButtons
+
+                Responsive.Mobile ->
+                    renderMinimalPlayerButtons
+
+                Responsive.Unknown ->
+                    renderPlayerButtons
+    in
     div [ StatusBarStyles.topBar ]
-        [ renderPlayerButtons player model.playbackState.state
+        [ playerButtons player model.playbackState.state
         , renderCurrentSong model
         , renderSongProgress model
         , renderShowHideButton model.showPanel
@@ -323,6 +336,26 @@ formatAsTime seconds =
             modBy 60 intSeconds |> String.fromInt |> String.padLeft 2 '0'
     in
     minutes ++ ":" ++ onlySeconds
+
+
+renderMinimalPlayerButtons : Player -> PlayerState -> Html Msg
+renderMinimalPlayerButtons player state =
+    let
+        showPlayButton =
+            state /= Playing
+
+        playPauseButton =
+            if showPlayButton then
+                renderButton player Play Icon.play (state == Playing)
+
+            else
+                renderButton player Pause Icon.pause (state == Paused)
+    in
+    div []
+        [ renderButton player Previous Icon.stepBackward False
+        , playPauseButton
+        , renderButton player Next Icon.stepForward False
+        ]
 
 
 renderPlayerButtons : Player -> PlayerState -> Html Msg
