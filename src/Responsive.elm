@@ -13,7 +13,7 @@ type ClientType
 
 determineClientType : Dimensions -> ClientType
 determineClientType dimensions =
-    if dimensions.width < 1000 then
+    if dimensions.width < 1200 then
         Mobile
 
     else
