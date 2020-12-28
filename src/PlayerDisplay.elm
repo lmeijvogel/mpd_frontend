@@ -47,6 +47,7 @@ type Msg
     = ReceivedAlbums (Result Http.Error (List Album))
     | AlbumChosen Player Album
     | StartedAlbum Player Album (Result Http.Error ())
+    | StatusBarClicked
     | StatusBarMsg StatusBar.Msg
 
 
@@ -88,6 +89,9 @@ update msg model =
 
                 Ok _ ->
                     ( { model | currentAlbum = Just album }, Cmd.map StatusBarMsg (StatusBar.load player) )
+
+        StatusBarClicked ->
+            ( { model | visiblePage = StatusPage }, Cmd.none )
 
 
 loadAlbumsAndStatus : Model -> Cmd Msg
@@ -172,7 +176,9 @@ view model clientType =
                     renderStatusBar model.player model.status clientType
 
         bottomBar =
-            HS.map StatusBarMsg (StatusBar.renderStatusSummary model.player model.status clientType)
+            div [ onClick StatusBarClicked ]
+                [ HS.map StatusBarMsg (StatusBar.renderStatusSummary model.player model.status clientType)
+                ]
     in
     div [] [ mainPage, bottomBar ]
 

@@ -23,16 +23,12 @@ panel =
         ]
 
 
-mainContents : Bool -> Attribute msg
-mainContents showContents =
-    if showContents then
-        css
-            [ displayFlex
-            , flexDirection row
-            ]
-
-    else
-        css [ display none ]
+mainContents : Attribute msg
+mainContents =
+    css
+        [ displayFlex
+        , flexDirection row
+        ]
 
 
 topBar : Attribute msg
@@ -50,7 +46,6 @@ topBar =
         , alignItems center
         , flexDirection row
         , height (px 45)
-        , padding2 (px 0) (px 10)
         ]
 
 
@@ -85,6 +80,23 @@ selected =
         [ backgroundColor (rgb 0 0 0)
         , color (rgb 255 255 255)
         ]
+
+
+
+-- These styles should ideally have been set on the containing element, topBar,
+-- but according to https://stackoverflow.com/a/50874488, flexbox first determines
+-- the sizes of the contents, then places the elements and only then adds padding.
+-- So we set the paddings on the contents instead.
+
+
+controlButtons : Attribute msg
+controlButtons =
+    css [ paddingLeft (px 10) ]
+
+
+showHideButton : Attribute msg
+showHideButton =
+    css [ paddingRight (px 10) ]
 
 
 controlButton : Attribute msg

@@ -4,7 +4,7 @@ import FontAwesome.Icon as Icon exposing (Icon)
 import FontAwesome.Solid as Icon
 import Html.Styled as HS exposing (..)
 import Html.Styled.Attributes exposing (src)
-import Html.Styled.Events exposing (onClick, onDoubleClick)
+import Html.Styled.Events exposing (onClick, onDoubleClick, stopPropagationOn)
 import Http exposing (jsonBody)
 import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
@@ -23,7 +23,6 @@ import Time
 type alias Model =
     { playlist : List PlaylistEntry
     , playbackState : PlaybackState
-    , showPanel : Bool
     , secondsSinceLastUpdate : Int
     }
 
@@ -83,7 +82,6 @@ init : Model
 init =
     { playlist = []
     , playbackState = initPlaybackState
-    , showPanel = True
     , secondsSinceLastUpdate = 0
     }
 
@@ -174,7 +172,6 @@ type Msg
     | SentPlayerCommand Player (Result Http.Error ())
     | OutputClicked Player Output
     | OutputActivated Player Output (Result Http.Error ())
-    | ShowHideIconClicked Bool
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -227,9 +224,6 @@ update message model =
                 Ok _ ->
                     ( model, loadPlaybackState player )
 
-        ShowHideIconClicked newState ->
-            ( { model | showPanel = newState }, Cmd.none )
-
 
 
 -- VIEW
@@ -238,8 +232,7 @@ update message model =
 view : Player -> Model -> Responsive.ClientType -> Html Msg
 view player model clientType =
     div [ StatusBarStyles.panel ]
-        [ renderStatusSummary player model clientType
-        , div [ StatusBarStyles.mainContents model.showPanel ]
+        [ div [ StatusBarStyles.mainContents ]
             [ renderPlaylist player model
             , div []
                 (List.map (renderCheckbox player model)
@@ -264,11 +257,12 @@ renderStatusSummary player model clientType =
                 Responsive.Unknown ->
                     renderPlayerButtons
     in
-    div [ StatusBarStyles.topBar ]
+    div
+        [ StatusBarStyles.topBar ]
         [ playerButtons player model.playbackState.state
         , renderCurrentSong model
         , renderSongProgress model
-        , renderShowHideButton model.showPanel
+        , renderShowStatusButton
         ]
 
 
@@ -360,7 +354,7 @@ renderMinimalPlayerButtons player state =
 
 renderPlayerButtons : Player -> PlayerState -> Html Msg
 renderPlayerButtons player state =
-    div []
+    div [ StatusBarStyles.controlButtons ]
         [ renderButton player Previous Icon.stepBackward False
         , renderButton player Play Icon.play (state == Playing)
         , renderButton player Pause Icon.pause (state == Paused)
@@ -371,7 +365,18 @@ renderPlayerButtons player state =
 
 renderButton : Player -> PlayerCommand -> Icon.Icon -> Bool -> Html Msg
 renderButton player command icon isActive =
+    -- These buttons need stopPropagation because we don't want
+    -- to interpret clicks on them as a request to open the status
+    -- page.
     let
+        onClickWithStopPropagation : msg -> Attribute msg
+        onClickWithStopPropagation message =
+            stopPropagationOn "click" (JD.map alwaysStopPropagation (JD.succeed message))
+
+        alwaysStopPropagation : msg -> ( msg, Bool )
+        alwaysStopPropagation msg =
+            ( msg, True )
+
         isActiveStyling =
             if isActive then
                 [ StatusBarStyles.activeButton ]
@@ -379,21 +384,18 @@ renderButton player command icon isActive =
             else
                 []
     in
-    HS.span ([ StatusBarStyles.controlButton, onClick (ClickedPlayerCommand player command) ] ++ isActiveStyling)
+    HS.span ([ StatusBarStyles.controlButton, onClickWithStopPropagation (ClickedPlayerCommand player command) ] ++ isActiveStyling)
         [ HS.fromUnstyled (Icon.viewIcon icon) ]
 
 
-renderShowHideButton : Bool -> Html Msg
-renderShowHideButton currentlyShowing =
-    let
-        icon =
-            if currentlyShowing then
-                Icon.angleDoubleDown
 
-            else
-                Icon.angleDoubleUp
-    in
-    div [ onClick (ShowHideIconClicked (not currentlyShowing)) ] [ HS.fromUnstyled (Icon.viewIcon icon) ]
+-- The showStatus button just has a signaling value, clicking anywhere in the bar will
+-- load the status display.
+
+
+renderShowStatusButton : Html Msg
+renderShowStatusButton =
+    div [ StatusBarStyles.showHideButton ] [ HS.fromUnstyled (Icon.viewIcon Icon.angleDoubleUp) ]
 
 
 renderPlaylist : Player -> Model -> Html Msg
