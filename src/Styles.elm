@@ -13,6 +13,7 @@ body =
         , backgroundColor (rgb 0 0 0)
         , color (rgb 255 255 255)
         , height (vh 100)
+        , fontFamilies [ "Verdana", "Sans" ]
         ]
 
 

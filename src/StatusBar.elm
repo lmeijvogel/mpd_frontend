@@ -231,15 +231,13 @@ update message model =
 
 view : Player -> Model -> Responsive.ClientType -> Html Msg
 view player model clientType =
-    div [ StatusBarStyles.panel ]
-        [ div [ StatusBarStyles.mainContents ]
-            [ renderPlaylist player model
-            , div []
-                (List.map (renderCheckbox player model)
-                    [ Repeat, Single, Random, Consume ]
-                )
-            , renderOutputs player model.playbackState
-            ]
+    div [ StatusBarStyles.mainContents ]
+        [ renderPlaylist player model
+        , div []
+            (List.map (renderCheckbox player model)
+                [ Repeat, Single, Random, Consume ]
+            )
+        , renderOutputs player model.playbackState
         ]
 
 
@@ -410,7 +408,7 @@ renderPlaylist player model =
             div [] [ text "Loading playlist" ]
 
         Just items ->
-            ul [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId player) items)
+            ol [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId player) items)
 
 
 renderPlaylistEntry : Maybe Int -> Player -> PlaylistEntry -> Html Msg
@@ -429,10 +427,10 @@ renderPlaylistEntry currentSongId player entry =
 
         elementClass =
             if isSongSelected then
-                [ clickHandler, StatusBarStyles.selected ]
+                [ clickHandler, StatusBarStyles.playlistEntry, StatusBarStyles.selected ]
 
             else
-                [ clickHandler ]
+                [ clickHandler, StatusBarStyles.playlistEntry ]
     in
     li elementClass
         [ div [ StatusBarStyles.playlistTitle ] [ text entry.title ]

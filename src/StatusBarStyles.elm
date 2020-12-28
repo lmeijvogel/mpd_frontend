@@ -10,24 +10,13 @@ panelBackgroundColor =
     rgb 64 64 64
 
 
-panel : Attribute msg
-panel =
-    css
-        [ position fixed
-        , bottom (px 0)
-        , minHeight (px 45)
-        , width (pct 100)
-        , backgroundColor panelBackgroundColor
-        , color (rgb 200 200 200)
-        , property "user-select" "none"
-        ]
-
-
 mainContents : Attribute msg
 mainContents =
     css
         [ displayFlex
-        , flexDirection row
+        , flexDirection column
+        , backgroundColor panelBackgroundColor
+        , property "user-select" "none"
         ]
 
 
@@ -52,11 +41,17 @@ topBar =
 playlist : Attribute msg
 playlist =
     css
-        [ height (px 170)
-        , margin (px 0)
-        , overflowY scroll
-        , listStyle none
+        [ overflowY scroll
         , textAlign left
+        , fontSize (pt 15)
+        ]
+
+
+playlistEntry : Attribute msg
+playlistEntry =
+    css
+        [ marginBottom (px 10)
+        , paddingLeft (px 10)
         ]
 
 
