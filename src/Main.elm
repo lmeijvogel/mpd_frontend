@@ -255,7 +255,7 @@ renderPage model =
                     div [] [ text "Error loading players" ]
 
                 Players players ->
-                    renderPlayersListAndPlayerDisplay players model.playerModel (Debug.log "clientType" model.clientType)
+                    renderPlayersListAndPlayerDisplay players model.playerModel model.clientType
     in
     div [ Styles.body ] [ content ]
 
