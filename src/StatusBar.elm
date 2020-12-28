@@ -21,7 +21,7 @@ import Time
 
 
 type alias Model =
-    { playlist : List PlaylistEntry
+    { playlist : Maybe (List PlaylistEntry)
     , playbackState : PlaybackState
     , secondsSinceLastUpdate : Int
     }
@@ -80,7 +80,7 @@ type alias Output =
 
 init : Model
 init =
-    { playlist = []
+    { playlist = Nothing
     , playbackState = initPlaybackState
     , secondsSinceLastUpdate = 0
     }
@@ -188,10 +188,10 @@ update message model =
         ReceivedPlaylist result ->
             case result of
                 Err _ ->
-                    ( { model | playlist = [] }, Cmd.none )
+                    ( { model | playlist = Nothing }, Cmd.none )
 
                 Ok entries ->
-                    ( { model | playlist = entries }, Cmd.none )
+                    ( { model | playlist = Just entries }, Cmd.none )
 
         ChangedPlaybackSetting player setting value ->
             ( model, storePlaybackSetting player setting value )
@@ -275,7 +275,12 @@ renderCurrentSong model =
         Just songId ->
             let
                 currentSong =
-                    List.filter (\item -> item.id == songId) model.playlist |> List.head
+                    case model.playlist of
+                        Nothing ->
+                            Nothing
+
+                        Just items ->
+                            List.filter (\item -> item.id == songId) items |> List.head
 
                 title =
                     case currentSong of
@@ -400,7 +405,12 @@ renderShowStatusButton =
 
 renderPlaylist : Player -> Model -> Html Msg
 renderPlaylist player model =
-    ul [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId player) model.playlist)
+    case model.playlist of
+        Nothing ->
+            div [] [ text "Loading playlist" ]
+
+        Just items ->
+            ul [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId player) items)
 
 
 renderPlaylistEntry : Maybe Int -> Player -> PlaylistEntry -> Html Msg
