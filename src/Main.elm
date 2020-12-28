@@ -228,7 +228,16 @@ update msg model =
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Music"
+    let
+        title =
+            case model.playerModel of
+                Nothing ->
+                    "Music"
+
+                Just playerModel ->
+                    playerModel.player.name
+    in
+    { title = title
     , body =
         [ renderPage model |> toUnstyled ]
     }
