@@ -266,20 +266,17 @@ renderPlayersListAndPlayerDisplay playerList maybePlayerModel clientType =
         playerDisplay =
             case maybePlayerModel of
                 Nothing ->
-                    [ div [] [ text "First select a player" ]
-                    ]
+                    div [] [ text "First select a player" ]
 
                 Just playerModel ->
-                    [ HS.map PlayerMsg
+                    HS.map PlayerMsg
                         (PlayerDisplay.view playerModel clientType)
-                    ]
     in
     div []
-        ([ HS.fromUnstyled FontAwesome.Styles.css
-         , renderPlayerSelector playerList maybePlayerModel
-         ]
-            ++ playerDisplay
-        )
+        [ HS.fromUnstyled FontAwesome.Styles.css
+        , renderPlayerSelector playerList maybePlayerModel
+        , playerDisplay
+        ]
 
 
 renderPlayerSelector : List Player -> Maybe PlayerDisplay.Model -> Html Msg
