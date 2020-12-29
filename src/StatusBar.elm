@@ -11,6 +11,7 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
 import Player exposing (Player)
 import Responsive
+import SingleSlider
 import StatusBarStyles
 import String exposing (toLower)
 import Time
@@ -47,6 +48,7 @@ type alias PlaybackState =
     , songId : Maybe Int
     , elapsed : Maybe Float
     , duration : Maybe Float
+    , volumeSlider : Maybe (SingleSlider.SingleSlider Msg)
     }
 
 
@@ -98,6 +100,7 @@ initPlaybackState =
     , songId = Nothing
     , elapsed = Nothing
     , duration = Nothing
+    , volumeSlider = Nothing
     }
 
 
@@ -130,6 +133,7 @@ decodePlaybackState =
         |> optional "songid" (JD.maybe int) Nothing
         |> optional "elapsed" (JD.maybe float) Nothing
         |> optional "duration" (JD.maybe float) Nothing
+        |> hardcoded Nothing
 
 
 decodeOutput : Decoder Output
@@ -163,7 +167,7 @@ stringStateToPlayerState input =
 
 
 type Msg
-    = ReceivedStatus (Result Http.Error PlaybackState)
+    = ReceivedStatus Player (Result Http.Error PlaybackState)
     | ReceivedPlaylist (Result Http.Error (List PlaylistEntry))
     | ChangedPlaybackSetting Player PlaybackSetting Bool
     | StoredPlaybackSetting Player PlaybackSetting Bool (Result Http.Error ())
@@ -172,18 +176,24 @@ type Msg
     | SentPlayerCommand Player (Result Http.Error ())
     | OutputClicked Player Output
     | OutputActivated Player Output (Result Http.Error ())
+    | VolumeChanged Player Float
+    | StoredVolume Player Int (Result Http.Error ())
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
-        ReceivedStatus result ->
+        ReceivedStatus player result ->
             case result of
                 Err _ ->
                     ( model, Cmd.none )
 
-                Ok newStatus ->
-                    ( { model | playbackState = newStatus, secondsSinceLastUpdate = 0 }, Cmd.none )
+                Ok status ->
+                    let
+                        statusWithVolumeSlider =
+                            addVolumeSlider player status
+                    in
+                    ( { model | playbackState = statusWithVolumeSlider, secondsSinceLastUpdate = 0 }, Cmd.none )
 
         ReceivedPlaylist result ->
             case result of
@@ -224,6 +234,37 @@ update message model =
                 Ok _ ->
                     ( model, loadPlaybackState player )
 
+        VolumeChanged player volume ->
+            let
+                existingPlaybackState =
+                    model.playbackState
+
+                newSlider =
+                    Maybe.map (SingleSlider.update volume) existingPlaybackState.volumeSlider
+
+                newPlaybackState =
+                    { existingPlaybackState | volume = Just (floor volume), volumeSlider = newSlider }
+            in
+            ( { model | playbackState = newPlaybackState }, setVolume player (floor volume) )
+
+        StoredVolume player volume result ->
+            ( model, Cmd.none )
+
+
+addVolumeSlider : Player -> PlaybackState -> PlaybackState
+addVolumeSlider player state =
+    let
+        initVolumeSlider p volume =
+            SingleSlider.init
+                { min = 0
+                , max = 100
+                , step = 1
+                , value = volume
+                , onChange = VolumeChanged p
+                }
+    in
+    { state | volumeSlider = Maybe.map (\volume -> initVolumeSlider player (toFloat volume)) state.volume }
+
 
 
 -- VIEW
@@ -238,7 +279,20 @@ view player model clientType =
                 [ Repeat, Single, Random, Consume ]
             )
         , renderOutputs player model.playbackState
+        , renderVolumeSlider player model.playbackState
         ]
+
+
+renderVolumeSlider : Player -> PlaybackState -> Html Msg
+renderVolumeSlider player state =
+    case state.volumeSlider of
+        Nothing ->
+            span [] []
+
+        Just volumeSlider ->
+            div []
+                [ HS.fromUnstyled (SingleSlider.view volumeSlider)
+                ]
 
 
 renderStatusSummary : Player -> Model -> Responsive.ClientType -> Html Msg
@@ -616,6 +670,19 @@ startSong player playlistEntry =
         }
 
 
+setVolume : Player -> Int -> Cmd Msg
+setVolume player volume =
+    Http.post
+        { url = buildPlayerUrl "volume" player
+        , body =
+            Http.jsonBody
+                (JE.object
+                    [ ( "volume", JE.int volume ) ]
+                )
+        , expect = Http.expectWhatever (StoredVolume player volume)
+        }
+
+
 loadPlaylist : Player -> Cmd Msg
 loadPlaylist player =
     Http.get
@@ -648,7 +715,7 @@ loadPlaybackState : Player -> Cmd Msg
 loadPlaybackState player =
     Http.get
         { url = buildPlayerUrl "status" player
-        , expect = Http.expectJson ReceivedStatus decodePlaybackState
+        , expect = Http.expectJson (ReceivedStatus player) decodePlaybackState
         }
 
 
