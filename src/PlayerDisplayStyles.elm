@@ -5,6 +5,14 @@ import Html.Styled exposing (Attribute)
 import Html.Styled.Attributes exposing (css)
 
 
+playerDisplay : Attribute msg
+playerDisplay =
+    css
+        [ displayFlex
+        , height (pct 100)
+        ]
+
+
 albumGrid : Attribute msg
 albumGrid =
     css

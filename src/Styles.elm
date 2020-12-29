@@ -22,6 +22,7 @@ playerSelector =
     css
         [ displayFlex
         , flexDirection row
+        , flexShrink (int 0)
         , height (px 50)
         , justifyContent flexEnd
         , alignItems center
@@ -53,4 +54,13 @@ selectedPlayer =
     css
         [ backgroundColor (rgb 255 255 255)
         , color (rgb 0 0 0)
+        ]
+
+
+pageContent : Attribute msg
+pageContent =
+    css
+        [ displayFlex
+        , flexDirection column
+        , height (pct 100)
         ]

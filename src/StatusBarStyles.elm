@@ -15,6 +15,9 @@ mainContents =
     css
         [ displayFlex
         , flexDirection column
+        , justifyContent spaceBetween
+        , width (pct 100)
+        , height (pct 100)
         , backgroundColor panelBackgroundColor
         , property "user-select" "none"
         ]
@@ -44,6 +47,7 @@ playlist =
         [ overflowY scroll
         , textAlign left
         , fontSize (pt 15)
+        , flexGrow (int 2)
         ]
 
 

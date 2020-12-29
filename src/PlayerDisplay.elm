@@ -180,7 +180,7 @@ view model clientType =
                 [ HS.map StatusBarMsg (StatusBar.renderStatusSummary model.player model.status clientType)
                 ]
     in
-    div [] [ mainPage, bottomBar ]
+    div [ PlayerDisplayStyles.playerDisplay ] [ mainPage, bottomBar ]
 
 
 renderAlbums : Model -> Responsive.ClientType -> Html Msg

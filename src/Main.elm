@@ -272,7 +272,9 @@ renderPlayersListAndPlayerDisplay playerList maybePlayerModel clientType =
                     HS.map PlayerMsg
                         (PlayerDisplay.view playerModel clientType)
     in
-    div []
+    div
+        [ Styles.pageContent
+        ]
         [ HS.fromUnstyled FontAwesome.Styles.css
         , renderPlayerSelector playerList maybePlayerModel
         , playerDisplay
