@@ -11,7 +11,7 @@ import Json.Encode as JE
 import Player exposing (Player)
 import PlayerDisplayStyles
 import Responsive
-import StatusBar exposing (..)
+import StatusPage exposing (..)
 import String exposing (concat)
 import Time
 
@@ -20,7 +20,7 @@ type alias Model =
     { player : Player
     , albumList : AlbumListModel
     , currentAlbum : Maybe Album
-    , status : StatusBar.Model
+    , status : StatusPage.Model
     , visiblePage : VisiblePage
     }
 
@@ -48,7 +48,7 @@ type Msg
     | AlbumChosen Player Album
     | StartedAlbum Player Album (Result Http.Error ())
     | StatusBarClicked
-    | StatusBarMsg StatusBar.Msg
+    | StatusPageMsg StatusPage.Msg
 
 
 init : Player -> Model
@@ -56,20 +56,20 @@ init player =
     { player = player
     , albumList = Loading
     , currentAlbum = Nothing
-    , status = StatusBar.init
-    , visiblePage = AlbumsPage
+    , status = StatusPage.init
+    , visiblePage = StatusPage
     }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        StatusBarMsg message ->
+        StatusPageMsg message ->
             let
-                ( newStatusBarModel, action ) =
-                    StatusBar.update message model.status
+                ( newStatusPageModel, action ) =
+                    StatusPage.update message model.status
             in
-            ( { model | status = newStatusBarModel }, Cmd.map StatusBarMsg action )
+            ( { model | status = newStatusPageModel }, Cmd.map StatusPageMsg action )
 
         ReceivedAlbums result ->
             case result of
@@ -88,7 +88,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 Ok _ ->
-                    ( { model | currentAlbum = Just album }, Cmd.map StatusBarMsg (StatusBar.load player) )
+                    ( { model | currentAlbum = Just album }, Cmd.map StatusPageMsg (StatusPage.load player) )
 
         StatusBarClicked ->
             ( { model | visiblePage = StatusPage }, Cmd.none )
@@ -123,12 +123,12 @@ triggerUpdateClock time model =
 
 loadStatus : Player -> Cmd Msg
 loadStatus player =
-    Cmd.map StatusBarMsg (StatusBar.load player)
+    Cmd.map StatusPageMsg (StatusPage.load player)
 
 
 loadPlaybackState : Player -> Cmd Msg
 loadPlaybackState player =
-    Cmd.map StatusBarMsg (StatusBar.load player)
+    Cmd.map StatusPageMsg (StatusPage.load player)
 
 
 clearAndPlay : Player -> Album -> Cmd Msg
@@ -173,11 +173,11 @@ view model clientType =
                     renderAlbums model clientType
 
                 StatusPage ->
-                    renderStatusBar model.player model.status clientType
+                    renderStatusPage model.player model.status clientType
 
         bottomBar =
             div [ onClick StatusBarClicked ]
-                [ HS.map StatusBarMsg (StatusBar.renderStatusSummary model.player model.status clientType)
+                [ HS.map StatusPageMsg (StatusPage.renderStatusSummary model.player model.status clientType)
                 ]
     in
     div [ PlayerDisplayStyles.playerDisplay ] [ mainPage, bottomBar ]
@@ -247,6 +247,6 @@ renderAlbumLine player album =
         ]
 
 
-renderStatusBar : Player -> StatusBar.Model -> Responsive.ClientType -> Html Msg
-renderStatusBar player status clientType =
-    HS.map StatusBarMsg (StatusBar.view player status clientType)
+renderStatusPage : Player -> StatusPage.Model -> Responsive.ClientType -> Html Msg
+renderStatusPage player status clientType =
+    HS.map StatusPageMsg (StatusPage.view player status clientType)

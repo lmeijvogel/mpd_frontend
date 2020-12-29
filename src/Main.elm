@@ -16,7 +16,6 @@ import Json.Encode as JE
 import Player exposing (Player)
 import PlayerDisplay exposing (..)
 import Responsive
-import StatusBar exposing (..)
 import String exposing (concat)
 import Styles
 import Task

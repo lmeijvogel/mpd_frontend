@@ -1,4 +1,4 @@
-module StatusBarStyles exposing (..)
+module StatusPageStyles exposing (..)
 
 import Css exposing (..)
 import Html.Styled exposing (Attribute)

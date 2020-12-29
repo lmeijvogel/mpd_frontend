@@ -1,4 +1,4 @@
-module StatusBar exposing (..)
+module StatusPage exposing (..)
 
 import FontAwesome.Icon as Icon exposing (Icon)
 import FontAwesome.Solid as Icon
@@ -12,7 +12,7 @@ import Json.Encode as JE
 import Player exposing (Player)
 import Responsive
 import SingleSlider
-import StatusBarStyles
+import StatusPageStyles
 import String exposing (toLower)
 import Time
 
@@ -272,7 +272,7 @@ addVolumeSlider player state =
 
 view : Player -> Model -> Responsive.ClientType -> Html Msg
 view player model clientType =
-    div [ StatusBarStyles.mainContents ]
+    div [ StatusPageStyles.mainContents ]
         [ renderPlaylist player model
         , div []
             (List.map (renderCheckbox player model)
@@ -310,7 +310,7 @@ renderStatusSummary player model clientType =
                     renderPlayerButtons
     in
     div
-        [ StatusBarStyles.topBar ]
+        [ StatusPageStyles.topBar ]
         [ playerButtons player model.playbackState.state
         , renderCurrentSong model
         , renderSongProgress model
@@ -411,7 +411,7 @@ renderMinimalPlayerButtons player state =
 
 renderPlayerButtons : Player -> PlayerState -> Html Msg
 renderPlayerButtons player state =
-    div [ StatusBarStyles.controlButtons ]
+    div [ StatusPageStyles.controlButtons ]
         [ renderButton player Previous Icon.stepBackward False
         , renderButton player Play Icon.play (state == Playing)
         , renderButton player Pause Icon.pause (state == Paused)
@@ -436,12 +436,12 @@ renderButton player command icon isActive =
 
         isActiveStyling =
             if isActive then
-                [ StatusBarStyles.activeButton ]
+                [ StatusPageStyles.activeButton ]
 
             else
                 []
     in
-    HS.span ([ StatusBarStyles.controlButton, onClickWithStopPropagation (ClickedPlayerCommand player command) ] ++ isActiveStyling)
+    HS.span ([ StatusPageStyles.controlButton, onClickWithStopPropagation (ClickedPlayerCommand player command) ] ++ isActiveStyling)
         [ HS.fromUnstyled (Icon.viewIcon icon) ]
 
 
@@ -452,7 +452,7 @@ renderButton player command icon isActive =
 
 renderShowStatusButton : Html Msg
 renderShowStatusButton =
-    div [ StatusBarStyles.showHideButton ] [ HS.fromUnstyled (Icon.viewIcon Icon.angleDoubleUp) ]
+    div [ StatusPageStyles.showHideButton ] [ HS.fromUnstyled (Icon.viewIcon Icon.angleDoubleUp) ]
 
 
 renderPlaylist : Player -> Model -> Html Msg
@@ -462,7 +462,7 @@ renderPlaylist player model =
             div [] [ text "Loading playlist" ]
 
         Just items ->
-            ol [ StatusBarStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId player) items)
+            ol [ StatusPageStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId player) items)
 
 
 renderPlaylistEntry : Maybe Int -> Player -> PlaylistEntry -> Html Msg
@@ -481,14 +481,14 @@ renderPlaylistEntry currentSongId player entry =
 
         elementClass =
             if isSongSelected then
-                [ clickHandler, StatusBarStyles.playlistEntry, StatusBarStyles.selected ]
+                [ clickHandler, StatusPageStyles.playlistEntry, StatusPageStyles.selected ]
 
             else
-                [ clickHandler, StatusBarStyles.playlistEntry ]
+                [ clickHandler, StatusPageStyles.playlistEntry ]
     in
     li elementClass
-        [ div [ StatusBarStyles.playlistTitle ] [ text entry.title ]
-        , div [ StatusBarStyles.playlistArtist ] [ text entry.artist ]
+        [ div [ StatusPageStyles.playlistTitle ] [ text entry.title ]
+        , div [ StatusPageStyles.playlistArtist ] [ text entry.artist ]
         ]
 
 
@@ -502,10 +502,10 @@ renderCheckbox player model setting =
         class =
             case isActive of
                 True ->
-                    [ StatusBarStyles.controlButton, StatusBarStyles.activeButton ]
+                    [ StatusPageStyles.controlButton, StatusPageStyles.activeButton ]
 
                 False ->
-                    [ StatusBarStyles.controlButton ]
+                    [ StatusPageStyles.controlButton ]
 
         clickHandler : List (Attribute Msg)
         clickHandler =
@@ -525,13 +525,13 @@ renderOutput player output =
         style =
             case output.isEnabled of
                 True ->
-                    StatusBarStyles.activeOutput
+                    StatusPageStyles.activeOutput
 
                 False ->
-                    StatusBarStyles.inactiveOutput
+                    StatusPageStyles.inactiveOutput
     in
-    li [ StatusBarStyles.outputRow ]
-        [ button [ onClick (OutputClicked player output), StatusBarStyles.output, style ]
+    li [ StatusPageStyles.outputRow ]
+        [ button [ onClick (OutputClicked player output), StatusPageStyles.output, style ]
             [ text output.name ]
         ]
 
