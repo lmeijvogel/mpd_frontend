@@ -60,7 +60,7 @@ type PlayersListModel
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init flags url key =
+init _ url key =
     ( { url = url
       , key = key
       , window = { width = 0, height = 0 }
@@ -87,7 +87,7 @@ loadPlayerStatus playerModel =
 type Msg
     = ReceivedPlayers (Result Http.Error (List Player))
     | PlayerChosen String
-    | SelectedPlayer String (Result Http.Error ())
+    | SelectedPlayer (Result Http.Error ())
     | TriggerRetrieveStatus (Maybe Player) Time.Posix
     | TriggerUpdateClock (Maybe Player) Time.Posix
     | UrlChanged Url.Url
@@ -128,7 +128,7 @@ update msg model =
             in
             ( { model | playerModel = newPlayerModel }, selectPlayer ip )
 
-        SelectedPlayer ip result ->
+        SelectedPlayer result ->
             case result of
                 Err _ ->
                     ( { model | playerModel = Nothing }, Cmd.none )
@@ -141,15 +141,10 @@ update msg model =
                     in
                     ( model, cmd )
 
-        TriggerRetrieveStatus maybePlayer time ->
+        TriggerRetrieveStatus maybePlayer _ ->
             let
                 cmd =
-                    case maybePlayer of
-                        Nothing ->
-                            Cmd.none
-
-                        Just player ->
-                            Cmd.map PlayerMsg (PlayerDisplay.loadPlaybackState player)
+                    Maybe.map (\player -> Cmd.map PlayerMsg (PlayerDisplay.loadPlaybackState player)) maybePlayer |> Maybe.withDefault Cmd.none
             in
             ( model, cmd )
 
@@ -158,7 +153,7 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-                Just player ->
+                Just _ ->
                     let
                         newPlayerModel =
                             Maybe.map (PlayerDisplay.triggerUpdateClock time) model.playerModel
@@ -284,12 +279,7 @@ renderPlayerSelector : List Player -> Maybe PlayerDisplay.Model -> Html Msg
 renderPlayerSelector playerList maybePlayerModel =
     let
         maybeCurrentPlayer =
-            case maybePlayerModel of
-                Nothing ->
-                    Nothing
-
-                Just playerModel ->
-                    Just playerModel.player
+            Maybe.map (\pm -> pm.player) maybePlayerModel
     in
     ul [ Styles.playerSelector ]
         (List.map
@@ -342,7 +332,7 @@ selectPlayer ip =
                     [ ( "ip", JE.string ip )
                     ]
                 )
-        , expect = Http.expectWhatever (SelectedPlayer ip)
+        , expect = Http.expectWhatever SelectedPlayer
         }
 
 
@@ -373,12 +363,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     let
         player =
-            case model.playerModel of
-                Nothing ->
-                    Nothing
-
-                Just playerModel ->
-                    Just playerModel.player
+            Maybe.map (\pm -> pm.player) model.playerModel
     in
     Sub.batch
         [ Time.every 5000 (TriggerRetrieveStatus player)

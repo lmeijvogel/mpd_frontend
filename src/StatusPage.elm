@@ -1,12 +1,11 @@
 module StatusPage exposing (..)
 
-import FontAwesome.Icon as Icon exposing (Icon)
-import FontAwesome.Solid as Icon
+import FontAwesome.Icon as Icon
+import FontAwesome.Solid as SolidIcon
 import Html.Styled as HS exposing (..)
-import Html.Styled.Attributes exposing (src)
 import Html.Styled.Events exposing (onClick, onDoubleClick, stopPropagationOn)
 import Http exposing (jsonBody)
-import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list, nullable, string)
+import Json.Decode as JD exposing (Decoder, bool, float, int, list, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as JE
 import Player exposing (Player)
@@ -14,7 +13,6 @@ import Responsive
 import SingleSlider
 import StatusPageStyles
 import String exposing (toLower)
-import Time
 
 
 
@@ -274,13 +272,20 @@ view : Player -> Model -> Responsive.ClientType -> Html Msg
 view player model clientType =
     div [ StatusPageStyles.mainContents ]
         [ renderPlaylist player model
-        , div []
-            (List.map (renderCheckbox player model)
-                [ Repeat, Single, Random, Consume ]
-            )
-        , renderOutputs player model.playbackState
-        , renderVolumeSlider player model.playbackState
+        , div [ StatusPageStyles.controls ]
+            [ renderPlayModeButtons player model
+            , renderOutputs player model.playbackState
+            , renderVolumeSlider player model.playbackState
+            ]
         ]
+
+
+renderPlayModeButtons : Player -> Model -> Html Msg
+renderPlayModeButtons player model =
+    div []
+        (List.map (renderCheckbox player model)
+            [ Repeat, Single, Random, Consume ]
+        )
 
 
 renderVolumeSlider : Player -> PlaybackState -> Html Msg
@@ -310,7 +315,7 @@ renderStatusSummary player model clientType =
                     renderPlayerButtons
     in
     div
-        [ StatusPageStyles.topBar ]
+        [ StatusPageStyles.statusSummary ]
         [ playerButtons player model.playbackState.state
         , renderCurrentSong model
         , renderSongProgress model
@@ -326,16 +331,8 @@ renderCurrentSong model =
 
         Just songId ->
             let
-                currentSong =
-                    case model.playlist of
-                        Nothing ->
-                            Nothing
-
-                        Just items ->
-                            List.filter (\item -> item.id == songId) items |> List.head
-
                 title =
-                    case currentSong of
+                    case currentSong model of
                         Nothing ->
                             ""
 
@@ -343,6 +340,21 @@ renderCurrentSong model =
                             song.artist ++ " - " ++ song.title
             in
             div [] [ text title ]
+
+
+currentSong : Model -> Maybe PlaylistEntry
+currentSong model =
+    case model.playbackState.songId of
+        Nothing ->
+            Nothing
+
+        Just songId ->
+            case model.playlist of
+                Nothing ->
+                    Nothing
+
+                Just items ->
+                    List.filter (\item -> item.id == songId) items |> List.head
 
 
 renderSongProgress : Model -> Html Msg
@@ -397,26 +409,26 @@ renderMinimalPlayerButtons player state =
 
         playPauseButton =
             if showPlayButton then
-                renderButton player Play Icon.play (state == Playing)
+                renderButton player Play SolidIcon.play (state == Playing)
 
             else
-                renderButton player Pause Icon.pause (state == Paused)
+                renderButton player Pause SolidIcon.pause (state == Paused)
     in
     div []
-        [ renderButton player Previous Icon.stepBackward False
+        [ renderButton player Previous SolidIcon.stepBackward False
         , playPauseButton
-        , renderButton player Next Icon.stepForward False
+        , renderButton player Next SolidIcon.stepForward False
         ]
 
 
 renderPlayerButtons : Player -> PlayerState -> Html Msg
 renderPlayerButtons player state =
     div [ StatusPageStyles.controlButtons ]
-        [ renderButton player Previous Icon.stepBackward False
-        , renderButton player Play Icon.play (state == Playing)
-        , renderButton player Pause Icon.pause (state == Paused)
-        , renderButton player Stop Icon.stop (state == Stopped)
-        , renderButton player Next Icon.stepForward False
+        [ renderButton player Previous SolidIcon.stepBackward False
+        , renderButton player Play SolidIcon.play (state == Playing)
+        , renderButton player Pause SolidIcon.pause (state == Paused)
+        , renderButton player Stop SolidIcon.stop (state == Stopped)
+        , renderButton player Next SolidIcon.stepForward False
         ]
 
 
@@ -452,7 +464,7 @@ renderButton player command icon isActive =
 
 renderShowStatusButton : Html Msg
 renderShowStatusButton =
-    div [ StatusPageStyles.showHideButton ] [ HS.fromUnstyled (Icon.viewIcon Icon.angleDoubleUp) ]
+    div [ StatusPageStyles.showHideButton ] [ HS.fromUnstyled (Icon.viewIcon SolidIcon.angleDoubleUp) ]
 
 
 renderPlaylist : Player -> Model -> Html Msg
@@ -462,7 +474,9 @@ renderPlaylist player model =
             div [] [ text "Loading playlist" ]
 
         Just items ->
-            ol [ StatusPageStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId player) items)
+            div [ StatusPageStyles.playlistContainer ]
+                [ ol [ StatusPageStyles.playlist ] (List.map (renderPlaylistEntry model.playbackState.songId player) items)
+                ]
 
 
 renderPlaylistEntry : Maybe Int -> Player -> PlaylistEntry -> Html Msg
@@ -502,16 +516,16 @@ renderCheckbox player model setting =
         class =
             case isActive of
                 True ->
-                    [ StatusPageStyles.controlButton, StatusPageStyles.activeButton ]
+                    [ StatusPageStyles.playModeButton, StatusPageStyles.activeButton ]
 
                 False ->
-                    [ StatusPageStyles.controlButton ]
+                    [ StatusPageStyles.playModeButton ]
 
         clickHandler : List (Attribute Msg)
         clickHandler =
             [ onClick (ChangedPlaybackSetting player setting (not isActive)) ]
     in
-    span (class ++ clickHandler) [ HS.fromUnstyled (Icon.viewIcon (getIconForSetting setting)) ]
+    span (class ++ clickHandler) [ div [] [ text (getNameFromSetting setting) ] ]
 
 
 renderOutputs : Player -> PlaybackState -> Html Msg
@@ -548,23 +562,6 @@ activateOutput player output =
                 )
         , expect = Http.expectWhatever (OutputActivated player output)
         }
-
-
-getIconForSetting : PlaybackSetting -> Icon.Icon
-getIconForSetting setting =
-    -- HS.input [ Html.Styled.Attributes.type_ "checkbox", Html.Styled.Attributes.checked (getValueFromStatus model.playbackState setting), Html.Styled.Events.onCheck (ChangedPlaybackSetting setting) ] []
-    case setting of
-        Repeat ->
-            Icon.retweet
-
-        Single ->
-            Icon.handPointUp
-
-        Random ->
-            Icon.random
-
-        Consume ->
-            Icon.cut
 
 
 getNameFromSetting : PlaybackSetting -> String

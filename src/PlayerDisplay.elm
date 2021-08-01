@@ -4,9 +4,7 @@ import Html.Styled as HS exposing (..)
 import Html.Styled.Attributes exposing (disabled, href, selected, src, value)
 import Html.Styled.Events exposing (onClick, onDoubleClick, onInput)
 import Http exposing (jsonBody)
-import Json.Decode as JD exposing (Decoder, bool, decodeString, float, int, list, nullable, string)
-import Json.Decode.Extra
-import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+import Json.Decode as JD exposing (list, string)
 import Json.Encode as JE
 import Player exposing (Player)
 import PlayerDisplayStyles
@@ -19,7 +17,6 @@ import Time
 type alias Model =
     { player : Player
     , albumList : AlbumListModel
-    , currentAlbum : Maybe Album
     , status : StatusPage.Model
     , visiblePage : VisiblePage
     }
@@ -55,9 +52,8 @@ init : Player -> Model
 init player =
     { player = player
     , albumList = Loading
-    , currentAlbum = Nothing
     , status = StatusPage.init
-    , visiblePage = StatusPage
+    , visiblePage = AlbumsPage
     }
 
 
@@ -88,7 +84,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 Ok _ ->
-                    ( { model | currentAlbum = Just album }, Cmd.map StatusPageMsg (StatusPage.load player) )
+                    ( model, Cmd.map StatusPageMsg (StatusPage.load player) )
 
         StatusBarClicked ->
             ( { model | visiblePage = StatusPage }, Cmd.none )

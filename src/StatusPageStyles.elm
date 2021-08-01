@@ -14,37 +14,32 @@ mainContents : Attribute msg
 mainContents =
     css
         [ displayFlex
-        , flexDirection column
+        , flexDirection row
         , justifyContent spaceBetween
+        , alignItems center
         , width (pct 100)
-        , height (pct 100)
         , backgroundColor panelBackgroundColor
+        , property "height" "calc(100% - 45px - 50px)"
         , property "user-select" "none"
+        , overflow hidden
         ]
 
 
-topBar : Attribute msg
-topBar =
+playlistContainer : Attribute msg
+playlistContainer =
     css
-        [ displayFlex
-        , position fixed
-        , bottom (px 0)
-        , minHeight (px 45)
-        , width (pct 100)
-        , backgroundColor panelBackgroundColor
-        , color (rgb 200 200 200)
-        , property "user-select" "none"
-        , justifyContent spaceBetween
-        , alignItems center
-        , flexDirection row
-        , height (px 45)
+        [ textAlign left
+        , fontSize (pt 15)
+        , height (pct 100)
+        , overflowY scroll
         ]
 
 
 playlist : Attribute msg
 playlist =
     css
-        [ overflowY scroll
+        [ displayFlex
+        , flexDirection column
         , textAlign left
         , fontSize (pt 15)
         , flexGrow (int 2)
@@ -81,6 +76,14 @@ selected =
         ]
 
 
+controls : Attribute msg
+controls =
+    css
+        [ displayFlex
+        , flexDirection column
+        ]
+
+
 
 -- These styles should ideally have been set on the containing element, topBar,
 -- but according to https://stackoverflow.com/a/50874488, flexbox first determines
@@ -101,8 +104,16 @@ showHideButton =
 controlButton : Attribute msg
 controlButton =
     css
-        [ fontSize (pt 20)
-        , margin2 (px 16) (px 8)
+        [ fontSize (pt 25)
+        , padding2 (px 8) (px 4)
+        , color (rgb 128 128 128)
+        ]
+
+
+playModeButton : Attribute msg
+playModeButton =
+    css
+        [ padding2 (px 8) (px 4)
         , color (rgb 128 128 128)
         ]
 
@@ -141,4 +152,20 @@ activeOutput : Attribute msg
 activeOutput =
     css
         [ color (rgb 255 255 255)
+        ]
+
+
+statusSummary : Attribute msg
+statusSummary =
+    css
+        [ minHeight (px 45)
+        , displayFlex
+        , flexDirection row
+        , backgroundColor panelBackgroundColor
+        , color (rgb 200 200 200)
+        , property "user-select" "none"
+        , justifyContent spaceBetween
+        , alignItems center
+        , height (px 45)
+        , width (pct 100)
         ]

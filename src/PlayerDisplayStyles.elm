@@ -5,6 +5,11 @@ import Html.Styled exposing (Attribute)
 import Html.Styled.Attributes exposing (css)
 
 
+panelBackgroundColor : Color
+panelBackgroundColor =
+    rgb 64 64 64
+
+
 playerDisplay : Attribute msg
 playerDisplay =
     css
@@ -148,4 +153,14 @@ albumCover =
     css
         [ width (px 200)
         , height (px 200)
+        ]
+
+
+bottomBar : Attribute msg
+bottomBar =
+    css
+        [ displayFlex
+        , position fixed
+        , bottom (px 0)
+        , width (pct 100)
         ]
