@@ -344,17 +344,17 @@ renderCurrentSong model =
 
 currentSong : Model -> Maybe PlaylistEntry
 currentSong model =
-    case model.playbackState.songId of
-        Nothing ->
+    case ( model.playbackState.songId, model.playlist ) of
+        ( Just songId, Just playlist ) ->
+            getSongFromPlaylist songId playlist
+
+        _ ->
             Nothing
 
-        Just songId ->
-            case model.playlist of
-                Nothing ->
-                    Nothing
 
-                Just items ->
-                    List.filter (\item -> item.id == songId) items |> List.head
+getSongFromPlaylist : Int -> List PlaylistEntry -> Maybe PlaylistEntry
+getSongFromPlaylist songId playlist =
+    List.filter (\item -> item.id == songId) playlist |> List.head
 
 
 renderSongProgress : Model -> Html Msg
