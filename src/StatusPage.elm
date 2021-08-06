@@ -514,12 +514,11 @@ renderCheckbox player model setting =
 
         class : List (Attribute Msg)
         class =
-            case isActive of
-                True ->
-                    [ StatusPageStyles.playModeButton, StatusPageStyles.activeButton ]
+            if isActive then
+                [ StatusPageStyles.playModeButton, StatusPageStyles.activeButton ]
 
-                False ->
-                    [ StatusPageStyles.playModeButton ]
+            else
+                [ StatusPageStyles.playModeButton, StatusPageStyles.inactiveButton ]
 
         clickHandler : List (Attribute Msg)
         clickHandler =

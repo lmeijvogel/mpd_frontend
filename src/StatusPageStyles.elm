@@ -114,7 +114,13 @@ playModeButton : Attribute msg
 playModeButton =
     css
         [ padding2 (px 8) (px 4)
-        , color (rgb 128 128 128)
+        ]
+
+
+inactiveButton : Attribute msg
+inactiveButton =
+    css
+        [ color (rgb 128 128 128)
         ]
 
 
