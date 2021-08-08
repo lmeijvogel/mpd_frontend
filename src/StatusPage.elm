@@ -13,7 +13,7 @@ import Player exposing (Player)
 import Responsive
 import SingleSlider
 import StatusPageStyles
-import String exposing (concat, toLower)
+import String exposing (toLower)
 
 
 
@@ -311,10 +311,7 @@ renderBigAlbumCover maybeAlbumCover =
         Just albumCover ->
             let
                 albumPath =
-                    String.concat
-                        [ "/api/covers/"
-                        , albumCover
-                        ]
+                    "/api/covers/" ++ albumCover
             in
             img [ StatusPageStyles.bigAlbumCover, src albumPath ] []
 
@@ -328,10 +325,7 @@ renderSmallAlbumCover maybeAlbumCover =
         Just albumCover ->
             let
                 albumPath =
-                    String.concat
-                        [ "/api/covers/"
-                        , albumCover
-                        ]
+                    "/api/covers/" ++ albumCover
             in
             img [ StatusPageStyles.smallAlbumCover, src albumPath ] []
 
@@ -772,4 +766,4 @@ buildPlayerUrl string player =
         playerPart =
             String.toLower player.name
     in
-    String.concat [ "/api/", playerPart, "/", string ]
+    "/api/" ++ playerPart ++ "/" ++ string
