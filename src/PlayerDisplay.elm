@@ -172,7 +172,7 @@ view model clientType =
                     renderStatusPage model.player model.status clientType
 
         bottomBar =
-            div [ onClick StatusBarClicked ]
+            div [ onClick StatusBarClicked, PlayerDisplayStyles.bottomBar ]
                 [ HS.map StatusPageMsg (StatusPage.renderStatusSummary model.player model.status clientType)
                 ]
     in
