@@ -10,11 +10,26 @@ panelBackgroundColor =
     rgb 64 64 64
 
 
-mainContents : Attribute msg
-mainContents =
+desktopMainContents : Attribute msg
+desktopMainContents =
     css
         [ displayFlex
         , flexDirection row
+        , justifyContent spaceBetween
+        , alignItems center
+        , width (pct 100)
+        , backgroundColor panelBackgroundColor
+        , property "height" "calc(100% - 45px - 50px)"
+        , property "user-select" "none"
+        , overflow hidden
+        ]
+
+
+mobileMainContents : Attribute msg
+mobileMainContents =
+    css
+        [ displayFlex
+        , flexDirection column
         , justifyContent spaceBetween
         , alignItems center
         , width (pct 100)
@@ -83,6 +98,17 @@ bigAlbumCover =
         , flexShrink (int 2)
         , maxWidth (pct 80)
         , height auto
+        , property "object-fit" "cover"
+        ]
+
+
+smallAlbumCover : Attribute msg
+smallAlbumCover =
+    css
+        [ displayFlex
+        , flexShrink (int 2)
+        , maxHeight (pct 30)
+        , width auto
         , property "object-fit" "cover"
         ]
 

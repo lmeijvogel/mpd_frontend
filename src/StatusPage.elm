@@ -278,15 +278,28 @@ addVolumeSlider player state =
 
 view : Player -> Model -> Responsive.ClientType -> Html Msg
 view player model clientType =
-        div [ StatusPageStyles.desktopMainContents ]
-            [ renderPlaylist player model
-            , div [ StatusPageStyles.bigAlbumCover, onClick AlbumCoverClicked ]
-                [ renderBigAlbumCover model.playbackState.currentAlbumCover ]
-            , div [ StatusPageStyles.controls ]
-                [ renderPlayModeButtons player model
-                , renderOutputs player model.playbackState
-                , renderVolumeSlider player model.playbackState
-            ]
+    case clientType of
+        Responsive.Desktop ->
+            div [ StatusPageStyles.desktopMainContents ]
+                [ renderPlaylist player model
+                , div [ StatusPageStyles.bigAlbumCover, onClick AlbumCoverClicked ]
+                    [ renderBigAlbumCover model.playbackState.currentAlbumCover ]
+                , div [ StatusPageStyles.controls ]
+                    [ renderPlayModeButtons player model
+                    , renderOutputs player model.playbackState
+                    , renderVolumeSlider player model.playbackState
+                    ]
+                ]
+
+        _ ->
+            div [ StatusPageStyles.mobileMainContents ]
+                [ renderSmallAlbumCover model.playbackState.currentAlbumCover
+                , renderPlaylist player model
+                , div [ StatusPageStyles.controls ]
+                    [ renderPlayModeButtons player model
+                    , renderVolumeSlider player model.playbackState
+                    ]
+                ]
 
 
 renderBigAlbumCover : Maybe String -> Html Msg
@@ -304,6 +317,23 @@ renderBigAlbumCover maybeAlbumCover =
                         ]
             in
             img [ StatusPageStyles.bigAlbumCover, src albumPath ] []
+
+
+renderSmallAlbumCover : Maybe String -> Html Msg
+renderSmallAlbumCover maybeAlbumCover =
+    case maybeAlbumCover of
+        Nothing ->
+            div [] []
+
+        Just albumCover ->
+            let
+                albumPath =
+                    String.concat
+                        [ "/api/covers/"
+                        , albumCover
+                        ]
+            in
+            img [ StatusPageStyles.smallAlbumCover, src albumPath ] []
 
 
 renderPlayModeButtons : Player -> Model -> Html Msg
