@@ -325,21 +325,16 @@ renderStatusSummary player model clientType =
 
 renderCurrentSong : Model -> Html Msg
 renderCurrentSong model =
-    case model.playbackState.songId of
-        Nothing ->
-            div [] []
+    let
+        title =
+            case currentSong model of
+                Nothing ->
+                    ""
 
-        Just songId ->
-            let
-                title =
-                    case currentSong model of
-                        Nothing ->
-                            ""
-
-                        Just song ->
-                            song.artist ++ " - " ++ song.title
-            in
-            div [] [ text title ]
+                Just song ->
+                    song.artist ++ " - " ++ song.title
+    in
+    div [] [ text title ]
 
 
 currentSong : Model -> Maybe PlaylistEntry
