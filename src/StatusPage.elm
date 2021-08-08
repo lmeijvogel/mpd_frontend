@@ -176,6 +176,7 @@ type Msg
     | ClickedPlayerCommand Player PlayerCommand
     | PlaylistEntryClicked Player PlaylistEntry
     | SentPlayerCommand Player (Result Http.Error ())
+    | AlbumCoverClicked
     | OutputClicked Player Output
     | OutputActivated Player Output (Result Http.Error ())
     | VolumeChanged Player Float
@@ -252,6 +253,9 @@ update message model =
         StoredVolume _ _ _ ->
             ( model, Cmd.none )
 
+        AlbumCoverClicked ->
+            ( model, Cmd.none )
+
 
 addVolumeSlider : Player -> PlaybackState -> PlaybackState
 addVolumeSlider player state =
@@ -276,13 +280,12 @@ view : Player -> Model -> Responsive.ClientType -> Html Msg
 view player model clientType =
         div [ StatusPageStyles.desktopMainContents ]
             [ renderPlaylist player model
-            , div [ StatusPageStyles.bigAlbumCover ]
+            , div [ StatusPageStyles.bigAlbumCover, onClick AlbumCoverClicked ]
                 [ renderBigAlbumCover model.playbackState.currentAlbumCover ]
             , div [ StatusPageStyles.controls ]
                 [ renderPlayModeButtons player model
                 , renderOutputs player model.playbackState
                 , renderVolumeSlider player model.playbackState
-                ]
             ]
 
 

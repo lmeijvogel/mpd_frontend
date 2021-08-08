@@ -61,11 +61,16 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         StatusPageMsg message ->
-            let
-                ( newStatusPageModel, action ) =
-                    StatusPage.update message model.status
-            in
-            ( { model | status = newStatusPageModel }, Cmd.map StatusPageMsg action )
+            case message of
+                AlbumCoverClicked ->
+                    ( { model | visiblePage = AlbumsPage }, Cmd.none )
+
+                _ ->
+                    let
+                        ( newStatusPageModel, action ) =
+                            StatusPage.update message model.status
+                    in
+                    ( { model | status = newStatusPageModel }, Cmd.map StatusPageMsg action )
 
         ReceivedAlbums result ->
             case result of
