@@ -245,7 +245,7 @@ update message model =
             in
             ( { model | playbackState = newPlaybackState }, setVolume player (floor volume) )
 
-        StoredVolume player volume result ->
+        StoredVolume _ _ _ ->
             ( model, Cmd.none )
 
 
@@ -382,8 +382,8 @@ formatCurrentTimeInSong elapsed duration =
 
 
 formatSongDuration : Float -> String
-formatSongDuration duration =
-    formatAsTime duration
+formatSongDuration =
+    formatAsTime
 
 
 formatAsTime : Float -> String
