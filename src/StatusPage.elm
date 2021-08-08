@@ -3,6 +3,7 @@ module StatusPage exposing (..)
 import FontAwesome.Icon as Icon
 import FontAwesome.Solid as SolidIcon
 import Html.Styled as HS exposing (..)
+import Html.Styled.Attributes exposing (src)
 import Html.Styled.Events exposing (onClick, onDoubleClick, stopPropagationOn)
 import Http exposing (jsonBody)
 import Json.Decode as JD exposing (Decoder, bool, float, int, list, string)
@@ -12,7 +13,7 @@ import Player exposing (Player)
 import Responsive
 import SingleSlider
 import StatusPageStyles
-import String exposing (toLower)
+import String exposing (concat, toLower)
 
 
 
@@ -47,6 +48,7 @@ type alias PlaybackState =
     , elapsed : Maybe Float
     , duration : Maybe Float
     , volumeSlider : Maybe (SingleSlider.SingleSlider Msg)
+    , currentAlbumCover : Maybe String
     }
 
 
@@ -99,6 +101,7 @@ initPlaybackState =
     , elapsed = Nothing
     , duration = Nothing
     , volumeSlider = Nothing
+    , currentAlbumCover = Nothing
     }
 
 
@@ -132,6 +135,7 @@ decodePlaybackState =
         |> optional "elapsed" (JD.maybe float) Nothing
         |> optional "duration" (JD.maybe float) Nothing
         |> hardcoded Nothing
+        |> optional "album_cover_path" (JD.maybe string) Nothing
 
 
 decodeOutput : Decoder Output
@@ -270,14 +274,33 @@ addVolumeSlider player state =
 
 view : Player -> Model -> Responsive.ClientType -> Html Msg
 view player model clientType =
-    div [ StatusPageStyles.mainContents ]
-        [ renderPlaylist player model
-        , div [ StatusPageStyles.controls ]
-            [ renderPlayModeButtons player model
-            , renderOutputs player model.playbackState
-            , renderVolumeSlider player model.playbackState
+        div [ StatusPageStyles.desktopMainContents ]
+            [ renderPlaylist player model
+            , div [ StatusPageStyles.bigAlbumCover ]
+                [ renderBigAlbumCover model.playbackState.currentAlbumCover ]
+            , div [ StatusPageStyles.controls ]
+                [ renderPlayModeButtons player model
+                , renderOutputs player model.playbackState
+                , renderVolumeSlider player model.playbackState
+                ]
             ]
-        ]
+
+
+renderBigAlbumCover : Maybe String -> Html Msg
+renderBigAlbumCover maybeAlbumCover =
+    case maybeAlbumCover of
+        Nothing ->
+            div [] [ text "No current album" ]
+
+        Just albumCover ->
+            let
+                albumPath =
+                    String.concat
+                        [ "/api/covers/"
+                        , albumCover
+                        ]
+            in
+            img [ StatusPageStyles.bigAlbumCover, src albumPath ] []
 
 
 renderPlayModeButtons : Player -> Model -> Html Msg

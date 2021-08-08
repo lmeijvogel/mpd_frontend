@@ -76,6 +76,17 @@ selected =
         ]
 
 
+bigAlbumCover : Attribute msg
+bigAlbumCover =
+    css
+        [ displayFlex
+        , flexShrink (int 2)
+        , maxWidth (pct 80)
+        , height auto
+        , property "object-fit" "cover"
+        ]
+
+
 controls : Attribute msg
 controls =
     css
