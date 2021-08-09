@@ -297,8 +297,7 @@ view player model clientType =
                 [ renderSmallAlbumCover model.playbackState.currentAlbumCover
                 , renderPlaylist player model
                 , div [ StatusPageStyles.controls ]
-                    [ renderPlayModeButtons player model
-                    , renderVolumeSlider player model.playbackState
+                    [ renderVolumeSlider player model.playbackState
                     ]
                 ]
 
