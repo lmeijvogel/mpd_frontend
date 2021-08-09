@@ -253,6 +253,7 @@ update message model =
         StoredVolume _ _ _ ->
             ( model, Cmd.none )
 
+        -- AlbumCoverClicked is just here for completeness, but is actually handled by PlayerDisplay
         AlbumCoverClicked ->
             ( model, Cmd.none )
 
